@@ -1,0 +1,13 @@
+{
+  "name": "panoramix-relay",
+  "version": "1.0.0",
+  "description": "PanoramixRemote pairing relay (WebSocket)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {}
+}

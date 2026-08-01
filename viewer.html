@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>PanoramixRemote</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #0f1115; color: #e7e9ee;
+    font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+  #app { height: 100%; display: flex; flex-direction: column; }
+  .center { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .card { width: 100%; max-width: 380px; background: #171a21; border: 1px solid #262b36;
+    border-radius: 14px; padding: 26px; box-shadow: 0 10px 40px rgba(0,0,0,.35); }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: #97a0b0; font-size: 13px; margin: 0 0 20px; }
+  label { display: block; font-size: 13px; color: #b7c0d0; margin: 14px 0 6px; }
+  input[type=password], input[type=text] { width: 100%; padding: 12px 14px; font-size: 15px;
+    background: #0f1218; border: 1px solid #2b313d; border-radius: 10px; color: #fff; }
+  button { cursor: pointer; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; }
+  .primary { width: 100%; margin-top: 18px; padding: 13px; background: #3b82f6; color: #fff; }
+  .primary:hover { background: #2f6fe0; }
+  .machine { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    width: 100%; padding: 14px 16px; margin-top: 10px; background: #0f1218; border: 1px solid #2b313d;
+    border-radius: 10px; color: #fff; text-align: left; }
+  .machine:hover { border-color: #3b82f6; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #34d399; display: inline-block; margin-right: 8px; }
+  .msg { margin-top: 14px; font-size: 13px; min-height: 18px; }
+  .err { color: #f87171; }
+  .ok { color: #34d399; }
+  .muted { color: #97a0b0; }
+  .linkbtn { background: none; color: #8ab4ff; padding: 6px 0; font-weight: 500; }
+
+  /* screen view */
+  #screen { display: none; flex: 1; flex-direction: column; }
+  #bar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: #12151c;
+    border-bottom: 1px solid #232936; flex-wrap: wrap; }
+  #bar .name { font-weight: 600; margin-right: auto; font-size: 14px; }
+  #bar button { padding: 8px 12px; background: #232a37; color: #dfe4ee; font-size: 13px; }
+  #bar button:hover { background: #2d3646; }
+  #bar .stat { font-size: 12px; color: #8b94a6; margin-left: 8px; }
+  #stageWrap { flex: 1; display: flex; align-items: center; justify-content: center;
+    background: #05070a; overflow: hidden; }
+  canvas { max-width: 100%; max-height: 100%; touch-action: none; cursor: crosshair;
+    background: #000; image-rendering: auto; }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- LOGIN -->
+  <div id="login" class="center">
+    <div class="card">
+      <h1>PanoramixRemote</h1>
+      <p class="sub">Contrôlez vos PC à distance.</p>
+      <label for="secret">Mot de passe secret</label>
+      <input id="secret" type="password" autocomplete="current-password" placeholder="••••••••••">
+      <button class="primary" id="btnConnect">Se connecter</button>
+      <div class="msg" id="loginMsg"></div>
+    </div>
+  </div>
+
+  <!-- MACHINE PICKER -->
+  <div id="picker" class="center" style="display:none">
+    <div class="card">
+      <h1>Vos ordinateurs</h1>
+      <p class="sub">Choisissez le PC à contrôler.</p>
+      <div id="machineList"></div>
+      <div class="msg muted" id="pickerMsg"></div>
+      <button class="linkbtn" id="btnRefresh">↻ Rafraîchir</button>
+      <button class="linkbtn" id="btnLogout">Se déconnecter</button>
+    </div>
+  </div>
+
+  <!-- SCREEN -->
+  <div id="screen">
+    <div id="bar">
+      <span class="name" id="scName"></span>
+      <button data-combo="alttab">Alt+Tab</button>
+      <button data-combo="win">⊞ Win</button>
+      <button data-combo="esc">Échap</button>
+      <button id="btnFull">⛶ Plein écran</button>
+      <button id="btnLeave">✕ Quitter</button>
+      <span class="stat" id="scStat"></span>
+    </div>
+    <div id="stageWrap"><canvas id="stage" width="640" height="360"></canvas></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var wsURL = (location.protocol === "https:" ? "wss" : "ws") + "://" + location.host + "/";
+  var ws = null, secret = "", curMachine = "";
+  var imgW = 640, imgH = 360;
+  var frames = 0, bytes = 0, lastStat = Date.now();
+
+  var $ = function (id) { return document.getElementById(id); };
+  var loginEl = $("login"), pickerEl = $("picker"), screenEl = $("screen");
+  var canvas = $("stage"), ctx = canvas.getContext("2d", { alpha: false });
+
+  function show(which) {
+    loginEl.style.display = which === "login" ? "flex" : "none";
+    pickerEl.style.display = which === "picker" ? "flex" : "none";
+    screenEl.style.display = which === "screen" ? "flex" : "none";
+  }
+
+  // ---- WebSocket lifecycle ----
+  function ensureSocket(onOpen) {
+    if (ws && ws.readyState === 1) { onOpen(); return; }
+    ws = new WebSocket(wsURL);
+    ws.binaryType = "arraybuffer";
+    ws.onopen = function () { onOpen(); };
+    ws.onmessage = onMessage;
+    ws.onclose = function () {
+      if (screenEl.style.display !== "none") {
+        setMsg("pickerMsg", "Connexion au serveur perdue.", "err");
+      }
+    };
+    ws.onerror = function () {};
+  }
+
+  function sendJSON(o) { ws.send(JSON.stringify(o)); }
+
+  function onMessage(ev) {
+    if (typeof ev.data === "string") { handleControl(JSON.parse(ev.data)); return; }
+    var b = new Uint8Array(ev.data);
+    if (b.length === 0) return;
+    if (b[0] === 0x01 && b.length >= 5) {         // screen info
+      imgW = (b[1] << 8) | b[2]; imgH = (b[3] << 8) | b[4];
+      canvas.width = imgW; canvas.height = imgH;
+    } else if (b[0] === 0x02) {                    // JPEG frame
+      bytes += b.length; frames++;
+      var blob = new Blob([b.subarray(1)], { type: "image/jpeg" });
+      createImageBitmap(blob).then(function (bmp) {
+        ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+        if (bmp.close) bmp.close();
+      }).catch(function () {});
+      updateStat();
+    }
+  }
+
+  function handleControl(m) {
+    switch (m.type) {
+      case "machines": renderMachines(m.machines); break;
+      case "connected":
+        curMachine = m.machine; $("scName").textContent = m.machine;
+        frames = 0; bytes = 0; show("screen"); focusKeys();
+        break;
+      case "peer-gone":
+        setMsg("pickerMsg", "« " + curMachine + " » s'est déconnecté.", "err");
+        refreshList(); show("picker");
+        break;
+      case "error":
+        if (m.reason === "bad-secret") { setMsg("loginMsg", "Mot de passe incorrect.", "err"); show("login"); }
+        else if (m.reason === "offline") { setMsg("pickerMsg", "Ce PC est hors ligne.", "err"); refreshList(); }
+        else if (m.reason === "busy") { setMsg("pickerMsg", "Ce PC est déjà contrôlé ailleurs.", "err"); }
+        else setMsg("pickerMsg", "Erreur : " + m.reason, "err");
+        break;
+    }
+  }
+
+  function setMsg(id, text, cls) { var e = $(id); e.textContent = text || ""; e.className = "msg" + (cls ? " " + cls : ""); }
+
+  // ---- Login ----
+  $("btnConnect").onclick = function () {
+    secret = $("secret").value;
+    if (!secret) { setMsg("loginMsg", "Entrez le mot de passe.", "err"); return; }
+    setMsg("loginMsg", "Connexion...", "muted");
+    ensureSocket(function () { refreshList(); });
+  };
+  $("secret").addEventListener("keydown", function (e) { if (e.key === "Enter") $("btnConnect").click(); });
+
+  function refreshList() { ensureSocket(function () { sendJSON({ role: "viewer", secret: secret, list: true }); }); }
+  $("btnRefresh").onclick = refreshList;
+  $("btnLogout").onclick = function () { try { ws.close(); } catch (e) {} ws = null; show("login"); };
+
+  function renderMachines(list) {
+    setMsg("loginMsg", "");
+    var box = $("machineList"); box.innerHTML = "";
+    if (!list || list.length === 0) {
+      box.innerHTML = '<p class="msg muted">Aucun PC en ligne. Lancez l\'agent sur votre PC, puis Rafraîchir.</p>';
+    } else {
+      list.forEach(function (name) {
+        var b = document.createElement("button");
+        b.className = "machine";
+        b.innerHTML = '<span><span class="dot"></span>' + escapeHtml(name) + "</span><span>›</span>";
+        b.onclick = function () { setMsg("pickerMsg", "Connexion à « " + name + " »...", "muted"); sendJSON({ role: "viewer", secret: secret, machine: name }); };
+        box.appendChild(b);
+      });
+    }
+    show("picker");
+  }
+  function escapeHtml(s) { return s.replace(/[&<>"]/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]; }); }
+
+  // ---- Screen: stats ----
+  function updateStat() {
+    var now = Date.now();
+    if (now - lastStat >= 1000) {
+      var kb = Math.round(bytes / 1024);
+      $("scStat").textContent = frames + " img/s · " + kb + " Ko/s";
+      frames = 0; bytes = 0; lastStat = now;
+    }
+  }
+
+  // ---- Input: pointer (mouse + touch) ----
+  function norm(ev) {
+    var r = canvas.getBoundingClientRect();
+    var x = (ev.clientX - r.left) / r.width;
+    var y = (ev.clientY - r.top) / r.height;
+    x = Math.max(0, Math.min(1, x)); y = Math.max(0, Math.min(1, y));
+    return [Math.round(x * 65535), Math.round(y * 65535)];
+  }
+  function u8(arr) { return new Uint8Array(arr); }
+  function put16(a, v) { a.push((v >> 8) & 0xff, v & 0xff); }
+  function sendMove(nx, ny) { if (connected()) ws.send(u8([0x10, (nx >> 8) & 255, nx & 255, (ny >> 8) & 255, ny & 255])); }
+  function sendBtn(down, button, nx, ny) { if (connected()) ws.send(u8([down ? 0x11 : 0x12, button, (nx >> 8) & 255, nx & 255, (ny >> 8) & 255, ny & 255])); }
+  function sendWheel(delta) { if (connected()) { var d = delta & 0xffff; ws.send(u8([0x13, (d >> 8) & 255, d & 255])); } }
+  function sendKey(down, vk, ext) { if (connected()) ws.send(u8([down ? 0x14 : 0x15, (vk >> 8) & 255, vk & 255, ext ? 1 : 0])); }
+  function connected() { return ws && ws.readyState === 1 && screenEl.style.display !== "none"; }
+
+  canvas.addEventListener("pointerdown", function (e) { e.preventDefault(); canvas.setPointerCapture(e.pointerId); var n = norm(e); sendBtn(true, e.button === 2 ? 1 : e.button === 1 ? 2 : 0, n[0], n[1]); });
+  canvas.addEventListener("pointerup", function (e) { e.preventDefault(); var n = norm(e); sendBtn(false, e.button === 2 ? 1 : e.button === 1 ? 2 : 0, n[0], n[1]); });
+  canvas.addEventListener("pointermove", function (e) { var n = norm(e); sendMove(n[0], n[1]); });
+  canvas.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+  canvas.addEventListener("wheel", function (e) { e.preventDefault(); sendWheel(e.deltaY > 0 ? -120 : 120); }, { passive: false });
+
+  // ---- Keyboard ----
+  var VK = buildVK();
+  function focusKeys() { window.focus(); }
+  window.addEventListener("keydown", function (e) { if (!connected()) return; var m = VK[e.code]; if (m) { e.preventDefault(); sendKey(true, m.vk, m.ext); } });
+  window.addEventListener("keyup", function (e) { if (!connected()) return; var m = VK[e.code]; if (m) { e.preventDefault(); sendKey(false, m.vk, m.ext); } });
+
+  function combo(keys) { // keys: [[vk,ext],...] press in order, release reverse
+    keys.forEach(function (k) { sendKey(true, k[0], k[1]); });
+    for (var i = keys.length - 1; i >= 0; i--) sendKey(false, keys[i][0], keys[i][1]);
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("#bar button[data-combo]"), function (btn) {
+    btn.onclick = function () {
+      var c = btn.getAttribute("data-combo");
+      if (c === "alttab") combo([[0xA4, false], [0x09, false]]);
+      else if (c === "win") combo([[0x5B, false]]);
+      else if (c === "esc") combo([[0x1B, false]]);
+      focusKeys();
+    };
+  });
+
+  $("btnLeave").onclick = function () { refreshList(); show("picker"); };
+  $("btnFull").onclick = function () {
+    var w = $("stageWrap");
+    if (!document.fullscreenElement) { (w.requestFullscreen || w.webkitRequestFullscreen).call(w); }
+    else document.exitFullscreen();
+  };
+
+  function buildVK() {
+    var m = {};
+    var i;
+    for (i = 0; i < 26; i++) m["Key" + String.fromCharCode(65 + i)] = { vk: 0x41 + i, ext: false };
+    for (i = 0; i < 10; i++) { m["Digit" + i] = { vk: 0x30 + i, ext: false }; m["Numpad" + i] = { vk: 0x60 + i, ext: false }; }
+    for (i = 1; i <= 12; i++) m["F" + i] = { vk: 0x6F + i, ext: false };
+    var simple = {
+      Escape: 0x1B, Backspace: 0x08, Tab: 0x09, Enter: 0x0D, Space: 0x20, CapsLock: 0x14,
+      ShiftLeft: 0xA0, ShiftRight: 0xA1, ControlLeft: 0xA2, AltLeft: 0xA4, MetaLeft: 0x5B, MetaRight: 0x5C,
+      Minus: 0xBD, Equal: 0xBB, BracketLeft: 0xDB, BracketRight: 0xDD, Backslash: 0xDC,
+      Semicolon: 0xBA, Quote: 0xDE, Backquote: 0xC0, Comma: 0xBC, Period: 0xBE, Slash: 0xBF,
+      NumpadAdd: 0x6B, NumpadSubtract: 0x6D, NumpadMultiply: 0x6A, NumpadDecimal: 0x6E,
+      NumLock: 0x90, ScrollLock: 0x91, Pause: 0x13, PrintScreen: 0x2C
+    };
+    for (var k in simple) m[k] = { vk: simple[k], ext: false };
+    var ext = {
+      ControlRight: 0xA3, AltRight: 0xA5, ArrowLeft: 0x25, ArrowUp: 0x26, ArrowRight: 0x27, ArrowDown: 0x28,
+      Insert: 0x2D, Delete: 0x2E, Home: 0x24, End: 0x23, PageUp: 0x21, PageDown: 0x22,
+      NumpadEnter: 0x0D, NumpadDivide: 0x6F, ContextMenu: 0x5D
+    };
+    for (var k2 in ext) m[k2] = { vk: ext[k2], ext: true };
+    return m;
+  }
+
+  show("login");
+})();
+</script>
+</body>
+</html>
