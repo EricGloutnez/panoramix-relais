@@ -72,6 +72,12 @@
   #uploadLbl { cursor: pointer; background: #3b82f6; color: #fff; padding: 9px 14px; border-radius: 8px; font-size: 14px; font-weight: 600; }
   #uploadLbl:hover { background: #2f6fe0; }
   #filesMsg { font-size: 13px; color: #9aa4b5; }
+
+  /* toast */
+  #toast { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%);
+    background: #1f6feb; color: #fff; padding: 12px 18px; border-radius: 10px; font-size: 14px;
+    max-width: 80%; text-align: center; box-shadow: 0 8px 30px rgba(0,0,0,.45); display: none; z-index: 30; }
+  #toast.show { display: block; }
 </style>
 </head>
 <body>
@@ -114,6 +120,7 @@
       <span class="stat" id="scStat"></span>
     </div>
     <div id="stageWrap"><canvas id="stage" width="640" height="360"></canvas></div>
+    <div id="toast"></div>
 
     <!-- FILE BROWSER -->
     <div id="files">
@@ -203,6 +210,8 @@
       fileMeta(b);
     } else if (b[0] === 0x06) {                    // file data chunk
       fileData(b);
+    } else if (b[0] === 0x07) {                    // toast (e.g. wake confirmation)
+      try { showToast(JSON.parse(td.decode(b.subarray(1))).text); } catch (e) {}
     } else if (b[0] === 0x02) {                    // JPEG frame
       bytes += b.length; frames++;
       var blob = new Blob([b.subarray(1)], { type: "image/jpeg" });
@@ -277,6 +286,13 @@
       $("scStat").textContent = frames + " img/s · " + kb + " Ko/s";
       frames = 0; bytes = 0; lastStat = now;
     }
+  }
+
+  var toastTimer = null;
+  function showToast(text) {
+    var el = $("toast"); el.textContent = text; el.classList.add("show");
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove("show"); }, 8000);
   }
 
   // ---- Monitor selector ----
