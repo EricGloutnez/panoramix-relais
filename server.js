@@ -23,6 +23,8 @@ const VIEWER_HTML = fs.readFileSync(path.join(__dirname, 'viewer.html'));
 
 // name -> agent conn
 const agents = new Map();
+// all live connections (for the keep-alive reaper)
+const conns = new Set();
 
 const server = http.createServer((req, res) => {
   if (req.url === '/health') { res.writeHead(200, { 'content-type': 'text/plain' }); res.end('OK'); return; }
@@ -39,6 +41,7 @@ function send(conn, obj) { try { conn.send(JSON.stringify(obj), false); } catch 
 
 ws.attach(server, (conn) => {
   conn._role = null; conn._name = null; conn._peer = null;
+  conns.add(conn);
 
   conn.on('message', (data, isBinary) => {
     if (conn._peer) { // paired: forward binary verbatim
@@ -75,6 +78,7 @@ ws.attach(server, (conn) => {
   });
 
   conn.on('close', () => {
+    conns.delete(conn);
     if (conn._role === 'agent' && conn._name && agents.get(conn._name) === conn) {
       agents.delete(conn._name);
       console.log(`[agent] "${conn._name}" gone (${agents.size} total)`);
@@ -86,5 +90,15 @@ ws.attach(server, (conn) => {
     }
   });
 });
+
+// Keep-alive reaper: drop connections that stop answering pings (e.g. a PC that went to
+// sleep or lost network), so stale "ghost" machines disappear from the list within ~1 min.
+setInterval(() => {
+  conns.forEach((c) => {
+    if (c._isAlive === false) { try { c.close(); } catch (_) {} return; }
+    c._isAlive = false;
+    try { c.ping(); } catch (_) {}
+  });
+}, 30000);
 
 server.listen(PORT, () => console.log(`PanoramixRemote relay listening on port ${PORT}`));

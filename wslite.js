@@ -85,12 +85,13 @@ class Conn {
     this.readyState = 1; // OPEN
     this.OPEN = 1;
     this._closed = false;
+    this._isAlive = true; // used by the server keep-alive reaper
     const parser = new Parser(
       (buf, bin) => this._emit('message', buf, bin),
       (opcode, buf) => {
         if (opcode === 0x9) { this._raw(encodeFrame(0xA, buf, !isServer)); } // ping -> pong
         else if (opcode === 0x8) { this.close(); } // close
-        // pong (0xA) ignored
+        else if (opcode === 0xA) { this._isAlive = true; } // pong -> still alive
       }
     );
     socket.on('data', (d) => { try { parser.push(d); } catch (e) { this._emit('error', e); this.close(); } });
