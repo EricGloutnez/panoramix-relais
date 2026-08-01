@@ -40,6 +40,8 @@
   #bar button { padding: 8px 12px; background: #232a37; color: #dfe4ee; font-size: 13px; }
   #bar button:hover { background: #2d3646; }
   #bar .stat { font-size: 12px; color: #8b94a6; margin-left: 8px; }
+  #monsel { display: inline-flex; gap: 4px; margin-right: 6px; }
+  #monsel button.active { background: #3b82f6; color: #fff; }
   #stageWrap { flex: 1; display: flex; align-items: center; justify-content: center;
     background: #05070a; overflow: hidden; }
   canvas { max-width: 100%; max-height: 100%; touch-action: none; cursor: crosshair;
@@ -76,6 +78,7 @@
   <div id="screen">
     <div id="bar">
       <span class="name" id="scName"></span>
+      <span id="monsel"></span>
       <button data-combo="alttab">Alt+Tab</button>
       <button data-combo="win">⊞ Win</button>
       <button data-combo="esc">Échap</button>
@@ -92,7 +95,7 @@
   "use strict";
   var wsURL = (location.protocol === "https:" ? "wss" : "ws") + "://" + location.host + "/";
   var ws = null, secret = "", curMachine = "";
-  var imgW = 640, imgH = 360;
+  var imgW = 640, imgH = 360, curMon = 0, reconnectTimer = null;
   var frames = 0, bytes = 0, lastStat = Date.now();
 
   var $ = function (id) { return document.getElementById(id); };
@@ -112,12 +115,23 @@
     ws.binaryType = "arraybuffer";
     ws.onopen = function () { onOpen(); };
     ws.onmessage = onMessage;
-    ws.onclose = function () {
-      if (screenEl.style.display !== "none") {
-        setMsg("pickerMsg", "Connexion au serveur perdue.", "err");
-      }
-    };
+    ws.onclose = onSocketClose;
     ws.onerror = function () {};
+  }
+
+  function onSocketClose() {
+    if (screenEl.style.display !== "none") {
+      $("scStat").textContent = "reconnexion…";
+      if (!reconnectTimer) reconnectTimer = setTimeout(function () { reconnectTimer = null; reconnectToScreen(); }, 1500);
+    } else if (pickerEl.style.display !== "none") {
+      setMsg("pickerMsg", "Connexion au serveur perdue.", "err");
+    }
+  }
+
+  function reconnectToScreen() {
+    if (screenEl.style.display === "none") return;
+    ws = null; // force a fresh socket
+    ensureSocket(function () { sendJSON({ role: "viewer", secret: secret, machine: curMachine }); });
   }
 
   function sendJSON(o) { ws.send(JSON.stringify(o)); }
@@ -129,6 +143,13 @@
     if (b[0] === 0x01 && b.length >= 5) {         // screen info
       imgW = (b[1] << 8) | b[2]; imgH = (b[3] << 8) | b[4];
       canvas.width = imgW; canvas.height = imgH;
+    } else if (b[0] === 0x03) {                    // monitor list
+      var n = b[1], mons = [], o = 2;
+      for (var k = 0; k < n && o + 5 < b.length; k++) {
+        mons.push({ index: b[o], primary: b[o + 1] === 1, w: (b[o + 2] << 8) | b[o + 3], h: (b[o + 4] << 8) | b[o + 5] });
+        o += 6;
+      }
+      renderMonitors(mons);
     } else if (b[0] === 0x02) {                    // JPEG frame
       bytes += b.length; frames++;
       var blob = new Blob([b.subarray(1)], { type: "image/jpeg" });
@@ -201,6 +222,29 @@
       $("scStat").textContent = frames + " img/s · " + kb + " Ko/s";
       frames = 0; bytes = 0; lastStat = now;
     }
+  }
+
+  // ---- Monitor selector ----
+  function renderMonitors(mons) {
+    var box = $("monsel");
+    box.innerHTML = "";
+    if (!mons || mons.length <= 1) { curMon = 0; return; } // no selector for a single screen
+    var prim = 0;
+    mons.forEach(function (m, i) { if (m.primary) prim = i; });
+    curMon = prim; // each new session starts on the primary screen
+    mons.forEach(function (m, i) {
+      var btn = document.createElement("button");
+      btn.textContent = "Écran " + (i + 1) + (m.primary ? " ★" : "");
+      if (i === curMon) btn.className = "active";
+      btn.onclick = function () { selectMonitor(i); };
+      box.appendChild(btn);
+    });
+  }
+  function selectMonitor(i) {
+    curMon = i;
+    if (connected()) ws.send(u8([0x20, i & 0xff]));
+    Array.prototype.forEach.call($("monsel").children, function (b, idx) { b.className = idx === i ? "active" : ""; });
+    focusKeys();
   }
 
   // ---- Input: pointer (mouse + touch) ----
