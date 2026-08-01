@@ -46,6 +46,32 @@
     background: #05070a; overflow: hidden; }
   canvas { max-width: 100%; max-height: 100%; touch-action: none; cursor: crosshair;
     background: #000; image-rendering: auto; }
+
+  /* file browser */
+  #files { display: none; position: absolute; inset: 0; background: rgba(0,0,0,.55);
+    align-items: center; justify-content: center; z-index: 20; }
+  #files.open { display: flex; }
+  #filesInner { width: min(680px, 92vw); height: min(560px, 82vh); background: #12151c;
+    border: 1px solid #2a3140; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
+  #filesHead { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px;
+    border-bottom: 1px solid #232936; font-size: 15px; }
+  #filesClose { cursor: pointer; color: #9aa4b5; font-size: 16px; padding: 0 4px; }
+  #filesClose:hover { color: #fff; }
+  #filesPath { padding: 8px 16px; font-size: 12px; color: #8ea0bd; font-family: monospace;
+    border-bottom: 1px solid #1c222d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #fileList { flex: 1; overflow-y: auto; }
+  .frow { display: flex; align-items: center; gap: 10px; padding: 9px 16px; cursor: pointer;
+    border-bottom: 1px solid #171b23; font-size: 14px; }
+  .frow:hover { background: #1a1f29; }
+  .frow .ic { width: 18px; text-align: center; }
+  .frow .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .frow .sz { color: #7c8699; font-size: 12px; }
+  .frow .dl { color: #8ab4ff; font-size: 13px; padding: 2px 8px; border-radius: 6px; }
+  .frow .dl:hover { background: #223; }
+  #filesFoot { display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-top: 1px solid #232936; }
+  #uploadLbl { cursor: pointer; background: #3b82f6; color: #fff; padding: 9px 14px; border-radius: 8px; font-size: 14px; font-weight: 600; }
+  #uploadLbl:hover { background: #2f6fe0; }
+  #filesMsg { font-size: 13px; color: #9aa4b5; }
 </style>
 </head>
 <body>
@@ -79,6 +105,7 @@
     <div id="bar">
       <span class="name" id="scName"></span>
       <span id="monsel"></span>
+      <button id="btnFiles">📁 Fichiers</button>
       <button data-combo="alttab">Alt+Tab</button>
       <button data-combo="win">⊞ Win</button>
       <button data-combo="esc">Échap</button>
@@ -87,6 +114,24 @@
       <span class="stat" id="scStat"></span>
     </div>
     <div id="stageWrap"><canvas id="stage" width="640" height="360"></canvas></div>
+
+    <!-- FILE BROWSER -->
+    <div id="files">
+      <div id="filesInner">
+        <div id="filesHead">
+          <strong>Fichiers du PC distant</strong>
+          <span id="filesClose">✕</span>
+        </div>
+        <div id="filesPath" title=""></div>
+        <div id="fileList"></div>
+        <div id="filesFoot">
+          <label id="uploadLbl">⬆ Envoyer un fichier ici
+            <input id="uploadInput" type="file" multiple style="display:none">
+          </label>
+          <span id="filesMsg"></span>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -97,6 +142,8 @@
   var ws = null, secret = "", curMachine = "";
   var imgW = 640, imgH = 360, curMon = 0, reconnectTimer = null;
   var frames = 0, bytes = 0, lastStat = Date.now();
+  var fileOpen = false, curPath = "", transfers = {}, nextTid = 1;
+  var td = new TextDecoder(), te = new TextEncoder();
 
   var $ = function (id) { return document.getElementById(id); };
   var loginEl = $("login"), pickerEl = $("picker"), screenEl = $("screen");
@@ -150,6 +197,12 @@
         o += 6;
       }
       renderMonitors(mons);
+    } else if (b[0] === 0x04) {                    // directory listing
+      fileDirList(b);
+    } else if (b[0] === 0x05) {                    // file meta (download start / done / error)
+      fileMeta(b);
+    } else if (b[0] === 0x06) {                    // file data chunk
+      fileData(b);
     } else if (b[0] === 0x02) {                    // JPEG frame
       bytes += b.length; frames++;
       var blob = new Blob([b.subarray(1)], { type: "image/jpeg" });
@@ -166,7 +219,9 @@
       case "machines": renderMachines(m.machines); break;
       case "connected":
         curMachine = m.machine; $("scName").textContent = m.machine;
-        frames = 0; bytes = 0; show("screen"); focusKeys();
+        frames = 0; bytes = 0; curPath = ""; fileOpen = false; transfers = {};
+        $("files").classList.remove("open");
+        show("screen"); focusKeys();
         break;
       case "peer-gone":
         setMsg("pickerMsg", "« " + curMachine + " » s'est déconnecté.", "err");
@@ -247,6 +302,109 @@
     focusKeys();
   }
 
+  // ---- File browser ----
+  function sendFileJSON(type, obj) {
+    if (!connected()) return;
+    var enc = te.encode(JSON.stringify(obj));
+    var buf = new Uint8Array(enc.length + 1);
+    buf[0] = type; buf.set(enc, 1);
+    ws.send(buf);
+  }
+  function joinPath(base, name) {
+    var sep = base.indexOf("\\") >= 0 ? "\\" : "/";
+    if (base.charAt(base.length - 1) === sep) return base + name;
+    return base + sep + name;
+  }
+  function openFiles() { fileOpen = true; $("files").classList.add("open"); setFilesMsg(""); sendFileJSON(0x21, { path: curPath }); }
+  function closeFiles() { fileOpen = false; $("files").classList.remove("open"); focusKeys(); }
+  function setFilesMsg(t) { $("filesMsg").textContent = t || ""; }
+
+  function fileDirList(b) {
+    var j;
+    try { j = JSON.parse(td.decode(b.subarray(1))); } catch (e) { return; }
+    curPath = j.path || "";
+    $("filesPath").textContent = j.roots ? "Cet ordinateur" : curPath;
+    $("filesPath").title = curPath;
+    $("uploadLbl").style.display = j.roots ? "none" : ""; // can't upload to the drive list
+    var list = $("fileList"); list.innerHTML = "";
+    if (j.error) { list.innerHTML = '<div class="frow" style="color:#f87171">Accès refusé : ' + escapeHtml(j.error) + "</div>"; }
+    if (!j.roots) {
+      var up = document.createElement("div");
+      up.className = "frow"; up.innerHTML = '<span class="ic">↩</span><span class="nm">.. (dossier parent)</span>';
+      up.onclick = function () { sendFileJSON(0x21, { path: j.parent || "" }); };
+      list.appendChild(up);
+    }
+    (j.entries || []).forEach(function (e) {
+      var row = document.createElement("div"); row.className = "frow";
+      if (e.dir) {
+        row.innerHTML = '<span class="ic">📁</span><span class="nm"></span>';
+        row.querySelector(".nm").textContent = e.name;
+        row.onclick = function () { sendFileJSON(0x21, { path: j.roots ? e.name : joinPath(curPath, e.name) }); };
+      } else {
+        row.innerHTML = '<span class="ic">📄</span><span class="nm"></span><span class="sz">' + humanSize(e.size) + '</span><span class="dl">⬇ télécharger</span>';
+        row.querySelector(".nm").textContent = e.name;
+        row.querySelector(".dl").onclick = function (ev) { ev.stopPropagation(); startDownload(joinPath(curPath, e.name), e.name); };
+      }
+      list.appendChild(row);
+    });
+  }
+  function humanSize(n) {
+    if (n == null) return "";
+    if (n < 1024) return n + " o";
+    if (n < 1048576) return (n / 1024).toFixed(0) + " Ko";
+    if (n < 1073741824) return (n / 1048576).toFixed(1) + " Mo";
+    return (n / 1073741824).toFixed(2) + " Go";
+  }
+  function startDownload(path, name) {
+    var id = nextTid++; transfers[id] = { name: name, chunks: [], up: false };
+    setFilesMsg("Téléchargement de « " + name + " »…");
+    sendFileJSON(0x22, { path: path, id: id });
+  }
+  function fileMeta(b) {
+    var m; try { m = JSON.parse(td.decode(b.subarray(1))); } catch (e) { return; }
+    if (m.error) { setFilesMsg("Erreur : " + m.error); if (transfers[m.id]) delete transfers[m.id]; return; }
+    if (m.done) { setFilesMsg("Fichier envoyé ✓"); sendFileJSON(0x21, { path: curPath }); return; }
+    var t = transfers[m.id]; if (t) { t.name = m.name || t.name; t.size = m.size; }
+  }
+  function fileData(b) {
+    var id = ((b[1] << 24) | (b[2] << 16) | (b[3] << 8) | b[4]) >>> 0;
+    var last = b[5]; var data = b.subarray(6);
+    var t = transfers[id]; if (!t) return;
+    if (data.length) t.chunks.push(data.slice());
+    if (last === 1) {
+      var blob = new Blob(t.chunks, { type: "application/octet-stream" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a"); a.href = url; a.download = t.name || "fichier";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 15000);
+      setFilesMsg("« " + (t.name || "fichier") + " » téléchargé ✓");
+      delete transfers[id];
+    }
+  }
+  function uploadFile(file) {
+    if (!curPath) return;
+    var id = nextTid++;
+    sendFileJSON(0x23, { id: id, name: file.name, destDir: curPath });
+    var CHUNK = 256 * 1024, offset = 0;
+    setFilesMsg("Envoi de « " + file.name + " »…");
+    function next() {
+      var slice = file.slice(offset, offset + CHUNK);
+      slice.arrayBuffer().then(function (ab) {
+        var bytes = new Uint8Array(ab); offset += bytes.length;
+        var last = offset >= file.size ? 1 : 0;
+        var buf = new Uint8Array(6 + bytes.length);
+        buf[0] = 0x24; buf[1] = (id >>> 24) & 255; buf[2] = (id >>> 16) & 255; buf[3] = (id >>> 8) & 255; buf[4] = id & 255; buf[5] = last;
+        buf.set(bytes, 6);
+        if (connected()) ws.send(buf);
+        if (!last) next();
+      });
+    }
+    next();
+  }
+  $("btnFiles").onclick = function () { if (fileOpen) closeFiles(); else openFiles(); };
+  $("filesClose").onclick = closeFiles;
+  $("uploadInput").onchange = function (e) { Array.prototype.forEach.call(e.target.files, uploadFile); e.target.value = ""; };
+
   // ---- Input: pointer (mouse + touch) ----
   function norm(ev) {
     var r = canvas.getBoundingClientRect();
@@ -272,8 +430,8 @@
   // ---- Keyboard ----
   var VK = buildVK();
   function focusKeys() { window.focus(); }
-  window.addEventListener("keydown", function (e) { if (!connected()) return; var m = VK[e.code]; if (m) { e.preventDefault(); sendKey(true, m.vk, m.ext); } });
-  window.addEventListener("keyup", function (e) { if (!connected()) return; var m = VK[e.code]; if (m) { e.preventDefault(); sendKey(false, m.vk, m.ext); } });
+  window.addEventListener("keydown", function (e) { if (fileOpen) { if (e.key === "Escape") closeFiles(); return; } if (!connected()) return; var m = VK[e.code]; if (m) { e.preventDefault(); sendKey(true, m.vk, m.ext); } });
+  window.addEventListener("keyup", function (e) { if (fileOpen || !connected()) return; var m = VK[e.code]; if (m) { e.preventDefault(); sendKey(false, m.vk, m.ext); } });
 
   function combo(keys) { // keys: [[vk,ext],...] press in order, release reverse
     keys.forEach(function (k) { sendKey(true, k[0], k[1]); });
