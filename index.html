@@ -1,0 +1,2086 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Caisse KÜTO">
+<meta name="theme-color" content="#141414">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%23141414'/%3E%3Ctext x='90' y='120' font-family='Arial,sans-serif' font-size='96' font-weight='800' fill='%23ffffff' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
+<title>Caisse KÜTO</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --bg: #f4f4f2;
+    --ink: #141414;
+    --muted: #7a7a76;
+    --line: #e2e2dd;
+    --card: #ffffff;
+    --accent: #b8352b;
+    --accent-soft: #f7e7e5;
+    --ok: #1c7c4a;
+  }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  body { min-height: 100vh; padding-top: env(safe-area-inset-top); }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 24px 22px 60px; }
+
+  /* ---- Header ---- */
+  .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .brand .logo {
+    font-size: 34px; font-weight: 800; letter-spacing: 1px; line-height: 1;
+  }
+  .brand .sub { font-size: 12px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+  .page-title { font-size: 15px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin: 2px 0 26px; }
+  .pin-wrap { max-width: 380px; margin: 24px auto 0; text-align: center; }
+  .pin-title { font-size: 16px; color: var(--muted); letter-spacing: 1px; margin: 16px 0 14px; }
+  .pin-dots { font-size: 26px; letter-spacing: 14px; color: var(--ink); padding-left: 14px; }
+  .pin-grid { position: static; max-width: 320px; margin: 8px auto 0; box-shadow: none; }
+  .header-row { display: flex; align-items: center; justify-content: space-between; }
+  .gear {
+    border: 1.5px solid var(--line); background: #fff; width: 50px; height: 50px;
+    border-radius: 14px; font-size: 24px; line-height: 1; cursor: pointer; color: var(--ink);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .gear:active { background: #f1f1ee; }
+
+  /* ---- Modal mot de passe ---- */
+  .modal {
+    position: fixed; inset: 0; background: rgba(20,20,20,.45); z-index: 100;
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal.show { display: flex; }
+  .modal-card { background: #fff; border-radius: 18px; padding: 24px; width: 100%; max-width: 360px; }
+  .modal-card .label { margin-bottom: 4px; }
+  .modal-card input {
+    width: 100%; font-size: 20px; padding: 15px 16px; border: 1.5px solid var(--line);
+    border-radius: 12px; font-family: inherit; color: var(--ink); margin-top: 6px;
+    -webkit-appearance: none; appearance: none;
+  }
+  .modal-card input:focus { outline: none; border-color: var(--accent); }
+  .pw-err { color: var(--accent); font-size: 14px; min-height: 18px; margin-top: 8px; }
+  .modal-btns { display: flex; gap: 10px; margin-top: 16px; }
+  .modal-btns button {
+    flex: 1; font-family: inherit; font-size: 17px; font-weight: 700; padding: 14px;
+    border-radius: 12px; cursor: pointer; border: 1.5px solid var(--line); background: #fff; color: var(--ink);
+  }
+  .modal-btns button.primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+  /* ---- Screens ---- */
+  .screen { display: none; }
+  .screen.active { display: block; animation: fade .25s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  /* ---- Accueil ---- */
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 18px;
+    padding: 22px; margin-bottom: 20px;
+  }
+  .label { font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+  input[type="date"] {
+    width: 100%; font-size: 22px; padding: 16px 18px; border: 1.5px solid var(--line);
+    border-radius: 14px; background: #fff; color: var(--ink); font-family: inherit;
+    -webkit-appearance: none; appearance: none;
+  }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .seg button {
+    font-family: inherit; font-size: 20px; font-weight: 700; padding: 26px 10px;
+    border: 1.5px solid var(--line); border-radius: 16px; background: #fff; color: var(--ink);
+    cursor: pointer; transition: all .15s ease; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .seg button .ico { font-size: 30px; }
+  .seg button.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+  .btn-primary {
+    width: 100%; font-family: inherit; font-size: 20px; font-weight: 700; letter-spacing: .5px;
+    padding: 20px; border: none; border-radius: 16px; background: var(--ink); color: #fff; cursor: pointer;
+    transition: opacity .15s ease;
+  }
+  .btn-primary:disabled { opacity: .3; cursor: default; }
+
+  /* ---- Liste des serveurs ---- */
+  .srv {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 4px; border-bottom: 1px solid var(--line);
+  }
+  .srv:last-of-type { border-bottom: none; }
+  .srv input[type="checkbox"] {
+    width: 28px; height: 28px; flex: 0 0 auto; accent-color: var(--accent); cursor: pointer;
+  }
+  .srv .nm { flex: 1; font-size: 19px; font-weight: 600; cursor: pointer; padding: 4px 0; }
+  .srv .del {
+    border: none; background: none; color: var(--muted); font-size: 24px;
+    line-height: 1; cursor: pointer; padding: 4px 10px; border-radius: 8px;
+  }
+  .srv .del:active { background: #f1f1ee; }
+  .empty-hint { color: var(--muted); font-size: 15px; padding: 8px 4px 4px; }
+  .srv-time { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .mini-sync {
+    font-family: inherit; font-size: 12px; font-weight: 700; letter-spacing: .3px; color: var(--muted);
+    background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; cursor: pointer;
+    text-transform: none;
+  }
+  .mini-sync:active { background: #f1f1ee; }
+  .mini-sync:disabled { opacity: .6; }
+  .fs-row { margin-top: 14px; }
+  .fs-select {
+    width: 100%; font-size: 16px; font-weight: 600; padding: 14px 16px; border: 1.5px dashed var(--line);
+    border-radius: 12px; background: #fff; color: var(--ink); font-family: inherit; -webkit-appearance: none; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a7a76' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 16px center;
+  }
+  .fs-select:focus { outline: none; border-color: var(--accent); }
+  .add-row { display: flex; gap: 10px; margin-top: 16px; }
+  .add-row input {
+    flex: 1; font-size: 18px; padding: 14px 16px; border: 1.5px solid var(--line);
+    border-radius: 12px; font-family: inherit; color: var(--ink); background: #fff;
+    -webkit-appearance: none; appearance: none;
+  }
+  .add-row input:focus { outline: none; border-color: var(--accent); }
+  .add-row button {
+    font-family: inherit; font-size: 16px; font-weight: 700; padding: 0 22px;
+    border: 1.5px solid var(--ink); background: #fff; color: var(--ink); border-radius: 12px; cursor: pointer;
+  }
+  .add-row button:active { background: #f1f1ee; }
+
+  /* ---- Saisie ---- */
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; gap: 12px; }
+  .back {
+    font-family: inherit; font-size: 15px; font-weight: 600; padding: 10px 16px; border: 1.5px solid var(--line);
+    background: #fff; border-radius: 12px; cursor: pointer; color: var(--ink);
+  }
+  .context { text-align: right; }
+  .context .d { font-size: 18px; font-weight: 700; }
+  .context .s { font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: var(--accent); font-weight: 700; }
+
+  .section-title { font-size: 18px; font-weight: 800; margin: 0 0 4px; }
+  .section-sub { font-size: 13px; color: var(--muted); margin: 0 0 18px; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; align-items: start; }
+  .grid .col { display: flex; flex-direction: column; }
+  @media (max-width: 560px){ .grid { grid-template-columns: 1fr; gap: 0; } }
+
+  .row {
+    display: grid; grid-template-columns: 96px 20px 1fr; align-items: center; gap: 8px;
+    padding: 8px 0; border-bottom: 1px solid var(--line);
+  }
+  .row .qty {
+    width: 96px; font-size: 22px; font-weight: 700; text-align: center; padding: 12px 6px;
+    border: 1.5px solid var(--line); border-radius: 12px; font-family: inherit; color: var(--ink);
+    -webkit-appearance: none; appearance: none; background:#fff; cursor: pointer;
+  }
+  .row .qty:focus { outline: none; }
+  .row .qty.active { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .row .x { text-align: center; color: var(--muted); font-size: 15px; }
+  .row .den { font-size: 15px; color: var(--ink); }
+  .row .den b { font-weight: 700; }
+  .row .amt { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 16px; text-align: right; }
+  .row .amt .z { color: var(--muted); font-weight: 400; }
+
+  .total-box {
+    margin-top: 22px; background: var(--ink); color: #fff; border-radius: 16px;
+    padding: 20px 22px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .total-box .t { font-size: 14px; letter-spacing: 2px; text-transform: uppercase; opacity: .8; }
+  .total-box .v { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+  .footnote { text-align:center; font-size:12px; color:var(--muted); margin-top:26px; }
+
+  /* ---- Cascade de calcul ---- */
+  .casc {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 4px; border-bottom: 1px solid var(--line);
+  }
+  .casc:last-child { border-bottom: none; }
+  .casc-l { font-size: 16px; color: var(--ink); }
+  .casc-v { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 17px; }
+  .casc-v.neg { color: var(--accent); }
+  .casc-input .money {
+    width: 150px; text-align: right; font-size: 20px; font-weight: 700; padding: 12px 14px;
+    border: 1.5px solid var(--line); border-radius: 12px; font-family: inherit; color: var(--ink);
+    background: #fff; -webkit-appearance: none; appearance: none; cursor: pointer;
+  }
+  .casc-input .money.active { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+  /* ---- Confirmation ---- */
+  .confirm-q { font-size: 19px; font-weight: 800; color: var(--ink); text-align: center; }
+  .confirm-total { font-size: 15px; color: var(--muted); text-align: center; margin-top: 8px; }
+  .confirm-total b { color: var(--ink); font-weight: 800; }
+
+  /* ---- Pop-up ancré en haut (heures) ---- */
+  .modal-top { align-items: flex-start; }
+  .modal-top .modal-card { margin-top: 34px; max-width: 460px; max-height: 64vh; overflow-y: auto; }
+  .hrow {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 12px 2px; border-bottom: 1px solid var(--line);
+  }
+  .hrow:last-child { border-bottom: none; }
+  .hrow .hnm { font-size: 17px; font-weight: 600; }
+  .hours {
+    width: 120px; text-align: right; font-size: 19px; font-weight: 700; padding: 12px;
+    border: 1.5px solid var(--line); border-radius: 12px; font-family: inherit; color: var(--ink);
+    background: #fff; cursor: pointer; -webkit-appearance: none; appearance: none;
+  }
+  .hours.active { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+  /* ---- Répartition affichée ---- */
+  .distro-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 15px 2px; border-bottom: 1px solid var(--line);
+  }
+  .distro-row:last-child { border-bottom: none; }
+  .distro-row .dn { font-size: 17px; font-weight: 700; }
+  .distro-row .dh { font-size: 13px; color: var(--muted); margin-left: 8px; font-weight: 400; }
+  .distro-row .da { font-size: 19px; font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; }
+  .distro-row .da .due { display: block; font-size: 12px; font-weight: 600; color: var(--muted); }
+
+  /* ---- Cartes serveur (retrait) ---- */
+  .scard { padding: 18px 20px; }
+  .scard-name { font-size: 19px; font-weight: 800; margin-bottom: 8px; }
+  .scard-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .scard-row:last-child { border-bottom: none; }
+  .scard-l { font-size: 15px; color: var(--muted); }
+  .scard-owed { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .scard-reste b { font-size: 18px; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .miniqty {
+    width: 130px; text-align: right; font-size: 18px; font-weight: 700; padding: 11px 12px;
+    border: 1.5px solid var(--line); border-radius: 12px; font-family: inherit; color: var(--ink);
+    background: #fff; cursor: pointer; -webkit-appearance: none; appearance: none;
+  }
+  .miniqty.active { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .scard-midi { border-color: var(--accent); background: var(--accent-soft); }
+  .scard-tag { display: inline-block; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: #fff; background: var(--accent); border-radius: 6px; padding: 2px 7px; vertical-align: middle; }
+  .ra-note { margin-top: 14px; padding: 12px 14px; background: var(--accent-soft); color: var(--accent); border-radius: 12px; font-size: 13px; font-weight: 600; }
+
+  /* ---- Rapport ---- */
+  .ra-doc { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 22px 20px; }
+  .ra-head { display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 2px solid var(--ink); padding-bottom: 12px; margin-bottom: 6px; }
+  .ra-brand { font-size: 28px; font-weight: 800; letter-spacing: 1px; }
+  .ra-ttl { text-align: right; font-size: 15px; font-weight: 700; line-height: 1.3; }
+  .ra-ttl span { font-weight: 500; color: var(--muted); }
+  .ra-sec { padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .ra-sec:last-child { border-bottom: none; }
+  .ra-h { font-size: 13px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .ra-tbl { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .ra-tbl td { padding: 4px 0; font-size: 15px; }
+  .ra-q { width: 44px; font-weight: 700; }
+  .ra-x { width: 20px; color: var(--muted); }
+  .ra-d { color: var(--ink); }
+  .ra-a { text-align: right; font-weight: 700; }
+  .ra-empty { color: var(--muted); font-style: italic; }
+  .ra-line { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; font-size: 15px; }
+  .ra-line b { font-variant-numeric: tabular-nums; }
+  .ra-tot { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 10px; font-weight: 800; font-size: 16px; }
+  .ra-ok { color: var(--ok); }
+  .ra-bad { color: var(--accent); }
+  .ra-srv { margin-top: 2px; }
+  .ra-srv th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); padding: 4px 6px 4px 0; font-weight: 700; }
+  .ra-srv th:nth-child(n+3), .ra-srv td:nth-child(n+3) { text-align: right; }
+  .ra-srv td { padding: 6px 6px 6px 0; font-size: 14px; border-top: 1px solid var(--line); }
+  .ra-sv-n { font-weight: 700; }
+
+  /* ---- Administration ---- */
+  .hist-card { padding: 16px 18px; }
+  .hist-date { font-size: 17px; font-weight: 800; margin-bottom: 10px; }
+  .hist-chips { display: flex; flex-wrap: wrap; gap: 10px; }
+  .hist-chip {
+    font-family: inherit; font-size: 15px; font-weight: 600; padding: 12px 16px;
+    border: 1.5px solid var(--line); background: #fff; color: var(--ink); border-radius: 12px; cursor: pointer; text-align: left;
+  }
+  .hist-chip:active { background: #f1f1ee; }
+  .hist-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); flex-wrap: wrap; }
+  .hist-svc { font-size: 16px; font-weight: 600; }
+  .hist-acts { display: flex; gap: 8px; }
+  .hist-view, .hist-del {
+    font-family: inherit; font-size: 14px; font-weight: 700; padding: 9px 14px; border-radius: 10px; cursor: pointer; border: 1.5px solid var(--line); background: #fff;
+  }
+  .hist-view { color: var(--ink); }
+  .hist-del { color: #fff; background: var(--accent); border-color: var(--accent); }
+  .hist-view:active { background: #f1f1ee; }
+  .week-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+  .week-nav button {
+    font-family: inherit; font-size: 22px; font-weight: 800; width: 52px; height: 52px;
+    border: 1.5px solid var(--line); background: #fff; color: var(--ink); border-radius: 14px; cursor: pointer;
+  }
+  .week-nav span { font-size: 15px; font-weight: 700; text-align: center; flex: 1; }
+  .wk-card { padding: 16px 18px; }
+  .wk-name { display: flex; align-items: center; justify-content: space-between; font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+  .wk-total { color: var(--accent); font-variant-numeric: tabular-nums; }
+  .wk-line { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; font-size: 14px; color: var(--muted); border-top: 1px solid var(--line); }
+  .wk-line b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .cust-dates { display: flex; gap: 12px; }
+  .cust-dates label { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .cust-lbl { font-size: 13px; color: var(--muted); font-weight: 700; }
+  .cust-dates input[type="date"] {
+    width: 100%; font-size: 17px; padding: 12px 14px; border: 1.5px solid var(--line);
+    border-radius: 12px; background: #fff; color: var(--ink); font-family: inherit; -webkit-appearance: none; appearance: none;
+  }
+  .cust-srv-list { display: flex; flex-direction: column; }
+  .cust-srv { display: flex; align-items: center; gap: 12px; padding: 12px 2px; border-bottom: 1px solid var(--line); font-size: 17px; font-weight: 600; }
+  .cust-srv:last-child { border-bottom: none; }
+  .cust-srv input[type="checkbox"] { width: 26px; height: 26px; accent-color: var(--accent); }
+
+  /* ---- Bannière de statut ---- */
+  .status { border-radius: 14px; padding: 14px 16px; font-size: 15px; font-weight: 600; margin-top: 18px; }
+  .status.ok { background: #e7f3ec; color: var(--ok); }
+  .status.warn { background: var(--accent-soft); color: var(--accent); }
+
+  /* ---- Pavé numérique ---- */
+  body.keypad-open { padding-bottom: 320px; }
+  #keypad {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 200;
+    background: #ffffff; border-top: 1px solid var(--line);
+    box-shadow: 0 -10px 30px rgba(0,0,0,.12);
+    padding: 12px 12px calc(14px + env(safe-area-inset-bottom));
+    transform: translateY(115%); transition: transform .22s ease;
+  }
+  #keypad.show { transform: translateY(0); }
+  .kp-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 4px 6px 10px; max-width: 520px; margin: 0 auto;
+  }
+  .kp-head .kp-lbl { font-size: 15px; color: var(--ink); font-weight: 700; }
+  .kp-head-btns { display: flex; align-items: center; gap: 10px; }
+  .kp-sign {
+    font-family: inherit; font-size: 16px; font-weight: 800; color: var(--accent);
+    background: var(--accent-soft); border: 1.5px solid var(--accent); border-radius: 12px;
+    padding: 10px 16px; cursor: pointer;
+  }
+  .kp-sign:active { background: #f0d6d3; }
+  .kp-done {
+    font-family: inherit; font-size: 16px; font-weight: 800; color: #fff; background: var(--ink);
+    border: none; border-radius: 12px; padding: 10px 22px; cursor: pointer;
+  }
+  .kp-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    max-width: 520px; margin: 0 auto;
+  }
+  .kp-grid button {
+    font-family: inherit; font-size: 30px; font-weight: 700; color: var(--ink);
+    background: #f1f1ee; border: none; border-radius: 14px; padding: 20px 0; cursor: pointer;
+    transition: background .1s ease; -webkit-user-select: none; user-select: none;
+  }
+  .kp-grid button:active { background: #e2e2dd; }
+  .kp-grid button.kp-act { background: var(--accent-soft); color: var(--accent); font-size: 26px; }
+  .kp-grid button.kp-ok { background: var(--ink); color: #fff; font-size: 22px; font-weight: 800; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="appHeader" style="display:none">
+    <div class="header-row">
+      <div class="brand">
+        <div class="logo">KÜTO</div>
+        <div>
+          <div class="sub">Comptoir à tartares</div>
+        </div>
+      </div>
+      <button type="button" class="gear" onclick="openSettings()" aria-label="Paramètres">⚙</button>
+    </div>
+    <div class="page-title">Feuille de caisse</div>
+  </div>
+
+  <!-- ===================== ÉCRAN NIP (iPad) ===================== -->
+  <section id="pinScreen" class="screen active">
+    <div class="pin-wrap">
+      <div class="logo" style="font-size:42px;text-align:center;margin-bottom:4px">KÜTO</div>
+      <div class="pin-title">Entre le NIP</div>
+      <div class="pin-dots" id="pinDots">○○○○</div>
+      <div id="pinError" class="pw-err" style="text-align:center;min-height:20px"></div>
+      <div class="kp-grid pin-grid">
+        <button type="button" onclick="pinKey('1')">1</button>
+        <button type="button" onclick="pinKey('2')">2</button>
+        <button type="button" onclick="pinKey('3')">3</button>
+        <button type="button" onclick="pinKey('4')">4</button>
+        <button type="button" onclick="pinKey('5')">5</button>
+        <button type="button" onclick="pinKey('6')">6</button>
+        <button type="button" onclick="pinKey('7')">7</button>
+        <button type="button" onclick="pinKey('8')">8</button>
+        <button type="button" onclick="pinKey('9')">9</button>
+        <button type="button" class="kp-act" onclick="pinKey('clear')">C</button>
+        <button type="button" onclick="pinKey('0')">0</button>
+        <button type="button" class="kp-act" onclick="pinKey('del')">⌫</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== ÉCRAN ACCUEIL ===================== -->
+  <section id="accueil" class="screen">
+    <div class="card">
+      <div class="label">Date</div>
+      <input type="date" id="dateInput">
+    </div>
+
+    <div class="card">
+      <div class="label">Quelle caisse ?</div>
+      <div class="seg">
+        <button type="button" data-service="midi" onclick="selectService('midi')">
+          <span class="ico">☀️</span> Caisse du midi
+        </button>
+        <button type="button" data-service="soir" onclick="selectService('soir')">
+          <span class="ico">🌙</span> Caisse du soir
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="label">Serveurs présents pendant le quart</div>
+      <div id="serverList"></div>
+      <div id="failsafeRow" class="fs-row"></div>
+    </div>
+
+    <button id="startBtn" class="btn-primary" disabled onclick="startSaisie()">Commencer</button>
+  </section>
+
+  <!-- ===================== ÉCRAN PARAMÈTRES ===================== -->
+  <section id="settings" class="screen">
+    <div class="topbar">
+      <button class="back" onclick="closeSettings()">‹ Retour</button>
+      <div class="context">
+        <div class="s">Paramètres</div>
+      </div>
+    </div>
+
+    <h2 class="section-title">Serveurs de l'équipe</h2>
+    <p class="section-sub">Ajoute ou retire les serveurs. Ils apparaîtront à l'accueil avec une case à cocher.</p>
+
+    <div class="card">
+      <div id="adminServerList"></div>
+      <div class="add-row">
+        <input type="text" id="newServer" placeholder="Nom du serveur" autocomplete="off"
+               onkeydown="if(event.key==='Enter'){addServer();}">
+        <button type="button" onclick="addServer()">Ajouter</button>
+      </div>
+    </div>
+
+    <h3 class="section-title" style="font-size:16px;margin-top:26px">Administration</h3>
+    <button class="btn-primary" id="prestoSyncBtn" style="margin-top:10px" onclick="openPrestoModal()">Synchroniser l'horaire (Presto)</button>
+    <button class="btn-primary" style="margin-top:12px" onclick="openHistory()">Consulter les feuilles</button>
+    <button class="btn-primary" style="margin-top:12px" onclick="openWeekly()">Rapport de la semaine</button>
+    <button class="btn-primary" style="margin-top:12px" onclick="openCustom()">Rapport personnalisé</button>
+
+    <h3 class="section-title" style="font-size:16px;margin-top:26px">Sécurité</h3>
+    <div class="card">
+      <div class="add-row">
+        <input type="text" id="newPin" inputmode="numeric" maxlength="4" placeholder="Nouveau NIP (4 chiffres)" autocomplete="off">
+        <button type="button" onclick="changePin()">Changer</button>
+      </div>
+      <div class="add-row" style="margin-top:12px">
+        <input type="password" id="newAdminPw" placeholder="Nouveau mot de passe admin" autocomplete="off">
+        <button type="button" onclick="changeAdminPw()">Changer</button>
+      </div>
+      <div id="secMsg" class="pw-err" style="min-height:18px"></div>
+    </div>
+  </section>
+
+  <!-- ===================== HISTORIQUE DES FEUILLES ===================== -->
+  <section id="history" class="screen">
+    <div class="topbar">
+      <button class="back" onclick="switchScreen('settings')">‹ Retour</button>
+      <div class="context"><div class="s">Feuilles</div></div>
+    </div>
+    <h2 class="section-title">Feuilles enregistrées</h2>
+    <p class="section-sub">Touche une journée pour consulter la feuille du midi ou du soir.</p>
+    <div id="historyList"></div>
+  </section>
+
+  <!-- ===================== VUE D'UNE FEUILLE ===================== -->
+  <section id="sheetView" class="screen">
+    <div class="topbar">
+      <button class="back" onclick="switchScreen('history')">‹ Retour</button>
+      <div class="context"><div class="s">Feuille</div></div>
+    </div>
+    <div id="sheetViewBody" class="rapport"></div>
+    <button class="btn-primary" style="margin-top:18px" onclick="emailSheet()">Envoyer par courriel</button>
+    <button class="btn-primary" style="margin-top:12px;background:var(--accent)" onclick="askDeleteSheet()">Supprimer la feuille</button>
+  </section>
+
+  <!-- ===================== RAPPORT HEBDOMADAIRE ===================== -->
+  <section id="weekly" class="screen">
+    <div class="topbar">
+      <button class="back" onclick="switchScreen('settings')">‹ Retour</button>
+      <div class="context"><div class="s">Rapport hebdo</div></div>
+    </div>
+    <h2 class="section-title">Pourboires non payés — semaine</h2>
+    <div class="week-nav">
+      <button type="button" onclick="changeWeek(-1)">‹</button>
+      <span id="weekLabel">—</span>
+      <button type="button" onclick="changeWeek(1)">›</button>
+    </div>
+    <div id="weeklyBody"></div>
+    <button class="btn-primary" style="margin-top:16px" onclick="emailWeekly()">Envoyer par courriel</button>
+  </section>
+
+  <!-- ===================== RAPPORT PERSONNALISÉ ===================== -->
+  <section id="custom" class="screen">
+    <div class="topbar">
+      <button class="back" onclick="switchScreen('settings')">‹ Retour</button>
+      <div class="context"><div class="s">Rapport personnalisé</div></div>
+    </div>
+    <h2 class="section-title">Rapport personnalisé</h2>
+    <div class="card">
+      <div class="label">Période</div>
+      <div class="cust-dates">
+        <label><span class="cust-lbl">Du</span><input type="date" id="custStart"></label>
+        <label><span class="cust-lbl">Au</span><input type="date" id="custEnd"></label>
+      </div>
+    </div>
+    <div class="card">
+      <div class="label">Serveurs</div>
+      <div id="custServers" class="cust-srv-list"></div>
+    </div>
+    <button class="btn-primary" onclick="generateCustom()">Générer le rapport</button>
+    <div id="customBody" style="margin-top:20px"></div>
+    <button class="btn-primary" style="margin-top:12px" onclick="emailCustom()">Envoyer par courriel</button>
+  </section>
+
+  <!-- ===================== ÉCRAN SAISIE ===================== -->
+  <section id="saisie" class="screen">
+    <div class="topbar">
+      <button class="back" onclick="goHome()">‹ Retour</button>
+      <div class="context">
+        <div class="d" id="ctxDate">—</div>
+        <div class="s" id="ctxService">—</div>
+      </div>
+    </div>
+
+    <h2 class="section-title">Montant de la caisse complète</h2>
+    <p class="section-sub">Entre la quantité pour chaque coupure. Le total se calcule automatiquement.</p>
+
+    <div class="grid" id="denomGrid"><!-- lignes injectées --></div>
+
+    <div class="total-box">
+      <span class="t">Total de la caisse</span>
+      <span class="v" id="grandTotal">0,00 $</span>
+    </div>
+
+    <button class="btn-primary" style="margin-top:22px" onclick="askSaveCaisse()">Continuer ›</button>
+    <p class="footnote">Étape 1 sur 6 — comptage de la caisse.</p>
+  </section>
+
+  <!-- ===================== ÉCRAN ÉTAPE 2 — RETOUR COMPTANT ===================== -->
+  <section id="etape2" class="screen">
+    <div class="topbar">
+      <button class="back" onclick="switchScreen('saisie')">‹ Retour</button>
+      <div class="context">
+        <div class="d" id="ctxDate2">—</div>
+        <div class="s" id="ctxService2">—</div>
+      </div>
+    </div>
+
+    <h2 class="section-title">Retour comptant</h2>
+    <p class="section-sub">Entre le montant du retour comptant, tel qu'indiqué par le système de caisse.</p>
+
+    <div class="card">
+      <div class="casc">
+        <span class="casc-l">Total de la caisse</span>
+        <span class="casc-v" id="c2Total">0,00 $</span>
+      </div>
+      <div class="casc">
+        <span class="casc-l">Moins la caisse</span>
+        <span class="casc-v neg">− 200,00 $</span>
+      </div>
+      <div class="casc casc-input">
+        <span class="casc-l">Moins retour comptant</span>
+        <input class="money" id="retourInput" type="text" inputmode="none" readonly
+               placeholder="0,00 $" data-mode="money" data-label="Retour comptant"
+               onclick="openKeypad(this)">
+      </div>
+    </div>
+
+    <div class="total-box">
+      <span class="t">Sous-total</span>
+      <span class="v" id="c2SousTotal">0,00 $</span>
+    </div>
+
+    <button class="btn-primary" style="margin-top:22px" onclick="continueEtape3()">Continuer ›</button>
+    <p class="footnote">Étape 2 sur 6 — retour comptant.</p>
+  </section>
+
+  <!-- ===================== ÉTAPE 3 — CALCUL & RÉPARTITION ===================== -->
+  <section id="etape3" class="screen">
+    <div class="topbar">
+      <button class="back" onclick="switchScreen('etape2')">‹ Retour</button>
+      <div class="context">
+        <div class="d" id="ctxDate3">—</div>
+        <div class="s" id="ctxService3">—</div>
+      </div>
+    </div>
+
+    <h2 class="section-title">Calcul et pourboires</h2>
+    <p class="section-sub">Après le dépôt et les pourboires, la caisse revient toujours à 200,00 $.</p>
+
+    <div class="card">
+      <div class="casc"><span class="casc-l">Solde de la caisse</span><span class="casc-v" id="r3Solde">0,00 $</span></div>
+      <div class="casc"><span class="casc-l">Caisse conservée</span><span class="casc-v neg">− 200,00 $</span></div>
+      <div class="casc"><span class="casc-l">Excédent</span><span class="casc-v" id="r3Excedent">0,00 $</span></div>
+      <div class="casc"><span class="casc-l">Retour comptant</span><span class="casc-v" id="r3Retour">0,00 $</span></div>
+      <div class="casc" id="r3MidiRow" style="display:none"><span class="casc-l">Retour comptant du midi (retiré)</span><span class="casc-v" id="r3MidiRetour">0,00 $</span></div>
+    </div>
+
+    <div class="total-box">
+      <span class="t">Total pourboire</span>
+      <span class="v" id="r3Pourboire">0,00 $</span>
+    </div>
+
+    <div class="total-box" id="r3DepotBox"
+         style="background:#fff;color:var(--ink);border:1.5px solid var(--ink);margin-top:14px;display:none">
+      <span class="t" style="opacity:1;color:var(--muted)">Dépôt à effectuer</span>
+      <span class="v" id="r3Depot">0,00 $</span>
+    </div>
+
+    <div id="r3Status" class="status ok"></div>
+
+    <div class="total-box" id="r3CashBox" style="margin-top:14px;background:var(--accent)">
+      <span class="t">Pourboire à retirer de la caisse</span>
+      <span class="v" id="r3CashTip">0,00 $</span>
+    </div>
+
+    <button class="btn-primary" style="margin-top:22px" onclick="goRetrait()">Continuer ›</button>
+    <p class="footnote">Étape 3 sur 6 — calcul.</p>
+  </section>
+
+  <!-- ===================== HEURES (répartition à plusieurs) ===================== -->
+  <section id="heures" class="screen">
+    <div class="topbar">
+      <button class="back" onclick="switchScreen('etape3')">‹ Retour</button>
+      <div class="context"><div class="s">Heures</div></div>
+    </div>
+    <h2 class="section-title">Heures travaillées</h2>
+    <p class="section-sub">Entre les heures de chaque serveur, puis confirme pour répartir le pourboire.</p>
+    <div class="total-box"><span class="t">Pourboire à répartir</span><span class="v" id="hPourboire">0,00 $</span></div>
+    <div id="hoursServers" style="margin-top:16px"></div>
+    <button class="btn-primary" style="margin-top:20px" onclick="confirmHours()">Confirmer les heures ›</button>
+  </section>
+
+  <!-- ===================== RETRAIT DU POURBOIRE ===================== -->
+  <section id="retrait" class="screen">
+    <div class="topbar">
+      <button class="back" onclick="backFromRetrait()">‹ Retour</button>
+      <div class="context">
+        <div class="d" id="ctxDateRt">—</div>
+        <div class="s" id="ctxServiceRt">—</div>
+      </div>
+    </div>
+
+    <h2 class="section-title">Retrait & répartition du pourboire</h2>
+    <p class="section-sub">Le pourboire est réparti selon les heures. Chaque serveur indique le montant qu'il a pris en comptant.</p>
+
+    <div class="card">
+      <div class="casc"><span class="casc-l">Pourboire total (dû)</span><span class="casc-v" id="rtTotalDu">0,00 $</span></div>
+      <div class="casc"><span class="casc-l">Maximum à prendre en comptant</span><span class="casc-v" id="rtCashTip">0,00 $</span></div>
+    </div>
+
+    <div id="rtNote" class="status warn" style="display:none"></div>
+
+    <div id="rtServers"></div>
+
+    <div class="total-box">
+      <span class="t">Total pris en comptant</span>
+      <span class="v" id="rtTakenSum">0,00 $</span>
+    </div>
+    <div id="rtTakenNote" class="status warn" style="display:none"></div>
+
+    <button class="btn-primary" style="margin-top:22px" onclick="askWithdraw()">Confirmer le retrait ›</button>
+    <p class="footnote">Étape 4 sur 6 — retrait du pourboire.</p>
+  </section>
+
+  <!-- ===================== RECOMPTE DE LA CAISSE ===================== -->
+  <section id="recompte" class="screen">
+    <div class="topbar">
+      <button class="back" onclick="switchScreen('retrait')">‹ Retour</button>
+      <div class="context">
+        <div class="d" id="ctxDateR">—</div>
+        <div class="s" id="ctxServiceR">—</div>
+      </div>
+    </div>
+
+    <h2 class="section-title">Recompte de la caisse</h2>
+    <p class="section-sub">Recompte la caisse après le retrait : elle doit être à 200,00 $.</p>
+
+    <div class="grid" id="recountGrid"><!-- injecté --></div>
+
+    <div class="total-box">
+      <span class="t">Total recompté</span>
+      <span class="v" id="recountTotal">0,00 $</span>
+    </div>
+
+    <div id="recountStatus" class="status"></div>
+
+    <button class="btn-primary" style="margin-top:22px" onclick="goRapport()">Voir le rapport ›</button>
+    <p class="footnote">Étape 5 sur 6 — recompte de la caisse.</p>
+  </section>
+
+  <!-- ===================== RAPPORT FINAL ===================== -->
+  <section id="rapport" class="screen">
+    <div class="topbar">
+      <button class="back" onclick="switchScreen('recompte')">‹ Retour</button>
+      <div class="context"><div class="s">Rapport</div></div>
+    </div>
+
+    <p class="section-sub">Vérifie que tout est exact, puis confirme pour enregistrer la feuille.</p>
+    <div id="rapportBody" class="rapport"></div>
+    <div id="rapportActions">
+      <button class="btn-primary" style="margin-top:20px" onclick="confirmRapport()">Confirmer et enregistrer ✓</button>
+    </div>
+    <p class="footnote">Étape 6 sur 6 — validation et enregistrement.</p>
+  </section>
+
+</div>
+
+<!-- ===================== MODAL SYNCHRO PRESTO ===================== -->
+<div id="prestoModal" class="modal">
+  <div class="modal-card">
+    <div class="confirm-q">Synchroniser l'horaire (Presto)</div>
+    <div class="confirm-total" style="margin-top:4px">Ton mot de passe n'est pas conservé.</div>
+    <div style="margin-top:14px">
+      <div class="label">Courriel Presto</div>
+      <input type="email" id="prestoEmail" autocomplete="username" placeholder="courriel@exemple.com"
+             style="width:100%;font-size:17px;padding:13px 15px;border:1.5px solid var(--line);border-radius:12px;font-family:inherit;-webkit-appearance:none;margin-top:4px">
+      <div class="label" style="margin-top:12px">Mot de passe Presto</div>
+      <input type="password" id="prestoPass" autocomplete="current-password" placeholder="Mot de passe"
+             style="width:100%;font-size:17px;padding:13px 15px;border:1.5px solid var(--line);border-radius:12px;font-family:inherit;-webkit-appearance:none;margin-top:4px"
+             onkeydown="if(event.key==='Enter'){doPrestoSync();}">
+    </div>
+    <div id="prestoMsg" class="pw-err" style="min-height:18px"></div>
+    <div class="modal-btns">
+      <button type="button" onclick="closePresto()">Annuler</button>
+      <button type="button" class="primary" id="prestoGo" onclick="doPrestoSync()">Synchroniser</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL SUPPRIMER UNE FEUILLE ===================== -->
+<div id="deleteModal" class="modal">
+  <div class="modal-card">
+    <div class="confirm-q">Supprimer cette feuille&nbsp;?</div>
+    <div class="confirm-total">Cette action est définitive.</div>
+    <div class="modal-btns">
+      <button type="button" onclick="closeDelete()">Annuler</button>
+      <button type="button" id="delConfirmBtn" class="primary" style="background:var(--accent);border-color:var(--accent)" onclick="doDeleteSheet()">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL CONFIRMATION SERVEUR MIDI NON PAYÉ ===================== -->
+<div id="carryModal" class="modal">
+  <div class="modal-card">
+    <div class="confirm-q" style="font-size:17px" id="carryConfirmText">—</div>
+    <div class="confirm-total" style="margin-top:8px">L'heure de cette confirmation sera enregistrée.</div>
+    <div class="modal-btns">
+      <button type="button" onclick="closeCarry()">Non, revenir</button>
+      <button type="button" class="primary" onclick="confirmCarryDecline()">Oui, confirmer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL CONFIRMATION RETRAIT ===================== -->
+<div id="withdrawModal" class="modal">
+  <div class="modal-card">
+    <div class="confirm-q">Le pourboire a-t-il été retiré de la caisse&nbsp;?</div>
+    <div class="confirm-total">Montant : <b id="withdrawAmt">0,00 $</b></div>
+    <div class="modal-btns">
+      <button type="button" onclick="closeWithdraw()">Non</button>
+      <button type="button" class="primary" onclick="confirmWithdraw()">Oui</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL CONFIRMATION CAISSE ===================== -->
+<div id="confirmModal" class="modal">
+  <div class="modal-card">
+    <div class="confirm-q">Enregistrer le montant de caisse&nbsp;?</div>
+    <div class="confirm-total">Total : <b id="confirmTotal">0,00 $</b></div>
+    <div class="modal-btns">
+      <button type="button" onclick="closeConfirm()">Non</button>
+      <button type="button" class="primary" onclick="confirmSaveCaisse()">Oui</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL MOT DE PASSE ===================== -->
+<div id="pwModal" class="modal">
+  <div class="modal-card">
+    <div class="label">Accès administrateur</div>
+    <input type="password" id="pwInput" placeholder="Mot de passe" autocomplete="off"
+           onkeydown="if(event.key==='Enter'){checkPw();}">
+    <div id="pwError" class="pw-err"></div>
+    <div class="modal-btns">
+      <button type="button" onclick="closePw()">Annuler</button>
+      <button type="button" class="primary" onclick="checkPw()">Accéder</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== PAVÉ NUMÉRIQUE ===================== -->
+<div id="keypad">
+  <div class="kp-head">
+    <div class="kp-lbl" id="kpLabel">—</div>
+    <div class="kp-head-btns">
+      <button type="button" id="kpSign" class="kp-sign" onclick="keySign()">± négatif</button>
+      <button type="button" class="kp-done" onclick="keyPress('del')">⌫</button>
+    </div>
+  </div>
+  <div class="kp-grid">
+    <button type="button" onclick="keyPress('1')">1</button>
+    <button type="button" onclick="keyPress('2')">2</button>
+    <button type="button" onclick="keyPress('3')">3</button>
+    <button type="button" onclick="keyPress('4')">4</button>
+    <button type="button" onclick="keyPress('5')">5</button>
+    <button type="button" onclick="keyPress('6')">6</button>
+    <button type="button" onclick="keyPress('7')">7</button>
+    <button type="button" onclick="keyPress('8')">8</button>
+    <button type="button" onclick="keyPress('9')">9</button>
+    <button type="button" class="kp-act" id="kpAlt" onclick="keyAlt()">C</button>
+    <button type="button" onclick="keyPress('0')">0</button>
+    <button type="button" class="kp-ok" onclick="okNext()">OK</button>
+  </div>
+</div>
+
+<script>
+  // ---- Coupures (pièces + billets) ----
+  const DENOMS = [
+    { v: 0.05, label: "0,05 $" },
+    { v: 0.10, label: "0,10 $" },
+    { v: 0.25, label: "0,25 $" },
+    { v: 1.00, label: "1,00 $" },
+    { v: 2.00, label: "2,00 $" },
+    { v: 5.00, label: "5,00 $" },
+    { v: 10.00, label: "10,00 $" },
+    { v: 20.00, label: "20,00 $" },
+    { v: 50.00, label: "50,00 $" },
+    { v: 100.00, label: "100,00 $" },
+  ];
+
+  let service = null;
+  let roster = [];              // [{id, name}]
+  let selected = new Set();     // ids des serveurs cochés
+  let shiftServers = [];        // serveurs retenus pour ce quart (pour l'étape 4)
+  let seq = 1;
+  let liveCaisseTotal = 0;      // total en direct pendant la saisie
+  let caisseTotal = 0;          // total figé au moment de l'enregistrement
+  let caisseDenoms = [];        // détail des coupures figé (pour le rapport)
+  let currentSheet = null;      // feuille en cours (calcul + répartition)
+  let midiSheetForShift = null; // feuille du midi rattachée au soir (pour le report)
+  const CAISSE_FLOAT = 200;     // montant conservé dans la caisse
+
+  // ================= Connexion + synchronisation serveur =================
+  let appPin = '';
+  let adminTok = '';
+  let pinBuf = '';
+
+  async function api(pathUrl, opts){
+    opts = opts || {};
+    const headers = { 'Content-Type': 'application/json' };
+    if (appPin) headers['x-pin'] = appPin;
+    if (opts.admin && adminTok) headers['x-admin-token'] = adminTok;
+    const res = await fetch(pathUrl, { method: opts.method || 'GET', headers, body: opts.body ? JSON.stringify(opts.body) : undefined });
+    if (!res.ok) throw new Error('API ' + res.status);
+    return res.json();
+  }
+
+  function pinKey(k){
+    if (k === 'del') pinBuf = pinBuf.slice(0, -1);
+    else if (k === 'clear') pinBuf = '';
+    else if (pinBuf.length < 4) pinBuf += k;
+    let dots = ''; for (let i = 0; i < 4; i++) dots += i < pinBuf.length ? '●' : '○';
+    document.getElementById('pinDots').textContent = dots;
+    if (pinBuf.length === 4) submitPin(pinBuf);
+  }
+
+  async function submitPin(pin){
+    try {
+      await api('/api/login', { method: 'POST', body: { pin } });
+      appPin = pin;
+      try { localStorage.setItem('kuto_pin', pin); } catch(e){}
+      document.getElementById('pinError').textContent = '';
+      await afterLogin();
+    } catch(e){
+      document.getElementById('pinError').textContent = 'NIP incorrect';
+      pinBuf = ''; document.getElementById('pinDots').textContent = '○○○○';
+    }
+  }
+
+  function getSheets(){
+    try { return JSON.parse(localStorage.getItem('kuto_sheets') || '[]'); } catch(e){ return []; }
+  }
+  function saveSheets(arr){
+    try { localStorage.setItem('kuto_sheets', JSON.stringify(arr)); } catch(e){}
+  }
+  function findSavedSheet(date, service){
+    const all = getSheets().filter(s => s.date === date && s.service === service);
+    return all.length ? all[all.length - 1] : null;
+  }
+
+  async function syncPull(){
+    try {
+      const servers = await api('/api/roster');
+      roster = servers.map(s => ({ id: s.id, name: s.name }));
+      seq = (roster.reduce((m, s) => Math.max(m, s.id), 0) || 0) + 1;
+      const sheets = await api('/api/sheets');
+      saveSheets(sheets);
+    } catch(e){ /* hors-ligne : on garde le cache local */ }
+  }
+
+  async function afterLogin(){
+    document.getElementById('appHeader').style.display = '';
+    await syncPull();
+    await loadPool();
+    await loadSchedule();
+    switchScreen('accueil');
+  }
+
+  async function boot(){
+    buildGrid(document.getElementById('denomGrid'), 'main');
+    buildGrid(document.getElementById('recountGrid'), 'recount');
+    const t = new Date();
+    const iso = t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2,'0') + '-' + String(t.getDate()).padStart(2,'0');
+    document.getElementById('dateInput').value = iso;
+    document.getElementById('dateInput').addEventListener('change', loadSchedule);
+    try { appPin = localStorage.getItem('kuto_pin') || ''; adminTok = localStorage.getItem('kuto_admin_tok') || ''; } catch(e){}
+    if (appPin){
+      try { await api('/api/roster'); await afterLogin(); return; } catch(e){ appPin = ''; }
+    }
+    switchScreen('pinScreen');
+  }
+
+  async function changePin(){
+    const v = (document.getElementById('newPin').value || '').trim();
+    const msg = document.getElementById('secMsg');
+    if (!/^\d{4}$/.test(v)){ msg.style.color = 'var(--accent)'; msg.textContent = 'NIP = 4 chiffres.'; return; }
+    try { await api('/api/admin/settings', { method: 'POST', admin: true, body: { pin: v } });
+      msg.style.color = 'var(--ok)'; msg.textContent = 'NIP changé.'; document.getElementById('newPin').value = '';
+    } catch(e){ msg.style.color = 'var(--accent)'; msg.textContent = 'Échec.'; }
+  }
+  async function changeAdminPw(){
+    const v = document.getElementById('newAdminPw').value || '';
+    const msg = document.getElementById('secMsg');
+    if (v.length < 6){ msg.style.color = 'var(--accent)'; msg.textContent = 'Mot de passe ≥ 6 caractères.'; return; }
+    try { await api('/api/admin/settings', { method: 'POST', admin: true, body: { adminPassword: v } });
+      msg.style.color = 'var(--ok)'; msg.textContent = 'Mot de passe admin changé.'; document.getElementById('newAdminPw').value = '';
+    } catch(e){ msg.style.color = 'var(--accent)'; msg.textContent = 'Échec.'; }
+  }
+
+  function money(n){
+    return n.toLocaleString('fr-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $';
+  }
+
+  // ---- Accueil : caisse ----
+  function selectService(s){
+    service = s;
+    document.querySelectorAll('.seg button').forEach(b => {
+      b.classList.toggle('on', b.dataset.service === s);
+    });
+    updateStart();
+  }
+
+  // ---- Accueil : serveurs ----
+  function loadRoster(){
+    try {
+      const raw = localStorage.getItem('kuto_roster');
+      if (raw){ roster = JSON.parse(raw) || []; }
+    } catch(e){ roster = []; }
+    let maxId = 0;
+    roster.forEach(r => { if (r.id > maxId) maxId = r.id; });
+    seq = maxId + 1;
+  }
+  function saveRoster(){
+    try { localStorage.setItem('kuto_roster', JSON.stringify(roster)); } catch(e){}
+  }
+
+  // ---- Accueil : serveurs présents (horaire Presto + failsafe) ----
+  let present = [];        // [{name, id?, time, checked, source:'schedule'|'manual'}]
+  let scheduleList = [];   // horaire brut de la date choisie
+  let pool = [];           // bassin failsafe : personnes Service + managers (Presto)
+
+  function findRosterId(name){
+    const r = roster.find(x => (x.name || '').toLowerCase() === String(name).toLowerCase());
+    return r ? r.id : null;
+  }
+
+  async function loadSchedule(){
+    const date = document.getElementById('dateInput').value;
+    scheduleList = [];
+    try { scheduleList = (await api('/api/schedule?date=' + encodeURIComponent(date))) || []; }
+    catch(e){ scheduleList = []; }
+    // Un même employé peut avoir plusieurs quarts : on dédoublonne par nom
+    const seen = new Set();
+    present = [];
+    scheduleList.forEach(s => {
+      const key = (s.name || '').toLowerCase();
+      if (!s.name || seen.has(key)) return;
+      seen.add(key);
+      present.push({ name: s.name, time: s.time || '', id: findRosterId(s.name), checked: true, source: 'schedule' });
+    });
+    renderPresent();
+    updateStart();
+  }
+
+  function renderPresent(){
+    const list = document.getElementById('serverList');
+    list.innerHTML = '';
+    if (!present.length){
+      list.innerHTML = '<div class="empty-hint">Aucun serveur à l\'horaire pour cette date. Ajoute-les ci-dessous.</div>';
+    } else {
+      present.forEach((p, i) => {
+        const row = document.createElement('div');
+        row.className = 'srv';
+        const tag = p.source === 'manual' ? ' <span class="scard-tag" style="background:var(--muted)">hors horaire</span>' : '';
+        const time = p.time ? ` <span class="srv-time">${escapeHtml(p.time)}</span>` : '';
+        row.innerHTML = `
+          <input type="checkbox" ${p.checked ? 'checked' : ''} onchange="togglePresent(${i})">
+          <span class="nm">${escapeHtml(p.name)}${time}${tag}</span>
+          ${p.source === 'manual' ? `<button type="button" class="del" onclick="removePresent(${i})" aria-label="Retirer">×</button>` : ''}
+        `;
+        list.appendChild(row);
+      });
+    }
+    renderFailsafe();
+  }
+
+  function renderFailsafe(){
+    const box = document.getElementById('failsafeRow');
+    if (!box) return;
+    const used = new Set(present.map(p => (p.name || '').toLowerCase()));
+    const source = (pool && pool.length) ? pool.slice() : roster.map(r => r.name);
+    const opts = source.filter(n => n && !used.has(n.toLowerCase())).sort((a, b) => a.localeCompare(b));
+    box.innerHTML =
+      '<select class="fs-select" onchange="addFailsafe(this.value); this.selectedIndex=0;">' +
+      '<option value="">+ Ajouter un serveur hors horaire…</option>' +
+      opts.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('') +
+      '</select>';
+  }
+
+  async function loadPool(){
+    try { pool = (await api('/api/presto/pool')) || []; } catch(e){ pool = []; }
+  }
+
+  function addFailsafe(name){
+    if (!name) return;
+    present.push({ name: name, id: findRosterId(name), time: '', checked: true, source: 'manual' });
+    renderPresent();
+    updateStart();
+  }
+  function togglePresent(i){ if (present[i]){ present[i].checked = !present[i].checked; updateStart(); } }
+  function removePresent(i){ present.splice(i, 1); renderPresent(); updateStart(); }
+
+  async function refreshSchedule(){
+    const btn = document.getElementById('syncBtn');
+    if (btn){ btn.disabled = true; btn.textContent = '…'; }
+    await syncPull();
+    await loadSchedule();
+    if (btn){
+      btn.textContent = '✓ à jour';
+      setTimeout(() => { btn.textContent = '↻ Synchro'; btn.disabled = false; }, 1400);
+    }
+  }
+
+  // ---- Synchronisation Presto (connexion → récupération de l'horaire) ----
+  async function openPrestoModal(){
+    document.getElementById('prestoMsg').textContent = '';
+    document.getElementById('prestoPass').value = '';
+    try { const r = await api('/api/presto/email'); document.getElementById('prestoEmail').value = r.email || ''; } catch(e){}
+    document.getElementById('prestoModal').classList.add('show');
+    setTimeout(() => {
+      const em = document.getElementById('prestoEmail');
+      (em.value ? document.getElementById('prestoPass') : em).focus();
+    }, 120);
+  }
+  function closePresto(){ document.getElementById('prestoModal').classList.remove('show'); }
+  async function doPrestoSync(){
+    const email = (document.getElementById('prestoEmail').value || '').trim();
+    const password = document.getElementById('prestoPass').value || '';
+    const msg = document.getElementById('prestoMsg');
+    const go = document.getElementById('prestoGo');
+    if (!email || !password){ msg.style.color = 'var(--accent)'; msg.textContent = 'Entre ton courriel et ton mot de passe.'; return; }
+    msg.style.color = 'var(--muted)'; msg.textContent = 'Connexion à Presto…';
+    if (go){ go.disabled = true; go.textContent = '…'; }
+    try {
+      const r = await api('/api/presto/sync', { method: 'POST', body: { email, password } });
+      closePresto();
+      await loadPool();
+      await loadSchedule();
+      const btn = document.getElementById('prestoSyncBtn');
+      if (btn){
+        const n = r.servers ? r.servers.length : 0;
+        btn.textContent = '✓ Horaire à jour (' + n + ' serveurs)';
+        setTimeout(() => { btn.textContent = 'Synchroniser l\'horaire (Presto)'; }, 2500);
+      }
+    } catch(e){
+      const s = String(e);
+      msg.style.color = 'var(--accent)';
+      msg.textContent = s.includes('401') ? 'Courriel ou mot de passe Presto incorrect.' : 'Échec de la synchronisation. Réessaie.';
+    } finally {
+      if (go){ go.disabled = false; go.textContent = 'Synchroniser'; }
+    }
+  }
+
+  // Liste de gestion dans les paramètres (avec suppression)
+  function renderAdminServers(){
+    const list = document.getElementById('adminServerList');
+    list.innerHTML = '';
+    if (roster.length === 0){
+      list.innerHTML = '<div class="empty-hint">Aucun serveur. Ajoute-en un ci-dessous.</div>';
+      return;
+    }
+    roster.forEach(r => {
+      const row = document.createElement('div');
+      row.className = 'srv';
+      row.innerHTML = `
+        <span class="nm">${escapeHtml(r.name)}</span>
+        <button type="button" class="del" onclick="removeServer(${r.id})" aria-label="Retirer">×</button>
+      `;
+      list.appendChild(row);
+    });
+  }
+
+  async function addServer(){
+    const inp = document.getElementById('newServer');
+    const name = (inp.value || '').trim();
+    if (!name) return;
+    try {
+      const item = await api('/api/roster', { method: 'POST', admin: true, body: { name } });
+      roster.push({ id: item.id, name: item.name });
+      inp.value = '';
+      renderAdminServers();
+      renderFailsafe();
+      inp.focus();
+    } catch(e){ console.error('Ajout serveur impossible', e); }
+  }
+
+  async function removeServer(id){
+    try {
+      await api('/api/roster/' + id, { method: 'DELETE', admin: true });
+      roster = roster.filter(r => r.id !== id);
+      renderAdminServers();
+      renderFailsafe();
+      updateStart();
+    } catch(e){ console.error('Retrait serveur impossible', e); }
+  }
+
+  // ---- Paramètres (accès admin protégé côté serveur) ----
+  function openSettings(){
+    const inp = document.getElementById('pwInput');
+    inp.value = '';
+    document.getElementById('pwError').textContent = '';
+    document.getElementById('pwModal').classList.add('show');
+    setTimeout(() => inp.focus(), 100);
+  }
+  function closePw(){ document.getElementById('pwModal').classList.remove('show'); }
+  async function checkPw(){
+    const v = document.getElementById('pwInput').value;
+    try {
+      const r = await api('/api/admin/login', { method: 'POST', body: { password: v } });
+      adminTok = r.token;
+      try { localStorage.setItem('kuto_admin_tok', adminTok); } catch(e){}
+      closePw();
+      await syncPull();
+      renderAdminServers();
+      switchScreen('settings');
+    } catch(e){
+      document.getElementById('pwError').textContent = 'Mot de passe incorrect.';
+      document.getElementById('pwInput').value = '';
+    }
+  }
+  function closeSettings(){ switchScreen('accueil'); }
+
+  function updateStart(){
+    const ok = !!service && present.some(p => p.checked);
+    document.getElementById('startBtn').disabled = !ok;
+  }
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function startSaisie(){
+    const d = document.getElementById('dateInput').value;
+    shiftServers = present.filter(p => p.checked).map(p => ({ id: p.id, name: p.name }));
+    document.getElementById('ctxDate').textContent = formatDate(d);
+    const n = shiftServers.length;
+    document.getElementById('ctxService').textContent =
+      (service === 'midi' ? 'Caisse du midi' : 'Caisse du soir') + ' · ' + n + ' serveur' + (n > 1 ? 's' : '');
+    switchScreen('saisie');
+  }
+
+  function goHome(){ closeKeypad(); switchScreen('accueil'); }
+
+  // ---- Pavé numérique ----
+  let activeInput = null;
+  let kpMode = 'int';   // 'int' pour quantités, 'money' pour montants
+  let activeFresh = false;   // 1re frappe après sélection = remplace la valeur
+
+  function openKeypad(inp){
+    if (activeInput) activeInput.classList.remove('active');
+    activeInput = inp;
+    kpMode = inp.dataset.mode || 'int';   // 'int' | 'money' | 'hours'
+    activeFresh = true;
+    inp.classList.add('active');
+    const lbl = inp.dataset.label || '';
+    document.getElementById('kpLabel').textContent =
+      kpMode === 'money' ? lbl :
+      kpMode === 'hours' ? ('Heures : ' + lbl) :
+      ('Coupure : ' + lbl);
+    document.getElementById('kpAlt').textContent = kpMode === 'int' ? 'C' : ',';
+    document.getElementById('kpSign').style.display =
+      (kpMode === 'money' && inp.dataset.nosign !== '1') ? '' : 'none';
+    document.getElementById('keypad').classList.add('show');
+    document.body.classList.add('keypad-open');
+    setTimeout(() => inp.scrollIntoView({ block: 'center', behavior: 'smooth' }), 60);
+  }
+
+  function closeKeypad(){
+    if (activeInput) activeInput.classList.remove('active');
+    activeInput = null;
+    document.getElementById('keypad').classList.remove('show');
+    document.body.classList.remove('keypad-open');
+  }
+
+  // OK : passe au champ suivant du même écran ; ferme si c'était le dernier
+  function okNext(){
+    if (!activeInput){ closeKeypad(); return; }
+    const screen = activeInput.closest('.screen');
+    const fields = screen ? Array.from(screen.querySelectorAll('input[readonly][inputmode="none"]')) : [];
+    const idx = fields.indexOf(activeInput);
+    if (idx >= 0 && idx < fields.length - 1) openKeypad(fields[idx + 1]);
+    else closeKeypad();
+  }
+
+  function keyAlt(){
+    // Touche bas-gauche : « , » en mode montant, « C » en mode quantité
+    if (kpMode === 'money') keyPress(',');
+    else keyPress('clear');
+  }
+
+  function keyPress(k){
+    if (!activeInput) return;
+    // 1re frappe de contenu après sélection : on remplace la valeur existante
+    const isContent = /^[0-9]$/.test(k) || k === ',';
+    if (activeFresh && isContent) activeInput.value = '';
+    activeFresh = false;
+
+    let v = activeInput.value || '';
+
+    if (kpMode === 'int'){
+      v = v.replace(/[^0-9]/g, '');
+      if (k === 'del') v = v.slice(0, -1);
+      else if (k === 'clear') v = '';
+      else if (v.length < 5) v += k;
+      activeInput.value = v;
+      if (activeInput.dataset.key === 'recount') recalcRecount(); else recalc();
+      return;
+    }
+
+    // Modes décimaux : 'money' ($) et 'hours' (h)
+    const suffix = kpMode === 'money' ? ' $' : ' h';
+    v = v.replace(/[\s$h]/g, '');
+    let neg = v.startsWith('-');
+    let body = neg ? v.slice(1) : v;
+    if (k === 'del') body = body.slice(0, -1);
+    else if (k === 'clear'){ body = ''; neg = false; }
+    else if (k === ','){
+      if (!body.includes(',')) body = (body === '' ? '0' : body) + ',';
+    } else { // chiffre
+      const parts = body.split(',');
+      if (parts.length === 2 && parts[1].length >= 2) { /* max 2 décimales */ }
+      else if (body.replace(/[^0-9]/g,'').length < 9) body += k;
+    }
+    if (kpMode === 'hours') neg = false;   // pas de négatif pour les heures
+    activeInput.value = body ? (neg ? '-' : '') + body + suffix : (neg ? '-' : '');
+    if (kpMode === 'money' && activeInput.id === 'retourInput') recalcCascade();
+    if (activeInput.dataset.role === 'taken') recomputeRetrait();
+  }
+
+  function parseMoney(s){
+    if (!s) return 0;
+    let str = String(s).replace(/\s|\$/g,'');
+    const neg = str.startsWith('-') || str.includes('−');
+    str = str.replace(',', '.').replace(/[^0-9.]/g,'');
+    let n = parseFloat(str);
+    if (isNaN(n)) n = 0;
+    return neg ? -n : n;
+  }
+
+  function keySign(){
+    if (kpMode !== 'money' || !activeInput) return;
+    let v = (activeInput.value || '').replace(/\s|\$/g, '');
+    let neg = v.startsWith('-');
+    let body = neg ? v.slice(1) : v;
+    neg = !neg;
+    activeInput.value = body ? (neg ? '-' : '') + body + ' $' : (neg ? '-' : '');
+    recalcCascade();
+  }
+
+  function switchScreen(id){
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0,0);
+  }
+
+  function formatDate(iso){
+    if(!iso) return '—';
+    const [y,m,dd] = iso.split('-').map(Number);
+    const mois = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+    return dd + ' ' + mois[m-1] + ' ' + y;
+  }
+
+  // ---- Grille de saisie ----
+  // Grille réutilisable : pièces (< 5 $) à gauche, billets à droite
+  function buildGrid(gridEl, key){
+    gridEl.innerHTML = '';
+    const coins = document.createElement('div'); coins.className = 'col';
+    const bills = document.createElement('div'); bills.className = 'col';
+    DENOMS.forEach((d, i) => {
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.innerHTML = `
+        <input class="qty" type="text" inputmode="none" readonly placeholder="0" data-key="${key}" data-i="${i}" data-label="${d.label}" onclick="openKeypad(this)">
+        <span class="x">×</span>
+        <span class="den"><b>${d.label}</b> <span class="amt" id="${key}-amt-${i}"><span class="z">= 0,00 $</span></span></span>
+      `;
+      (d.v < 5 ? coins : bills).appendChild(row);
+    });
+    gridEl.appendChild(coins);
+    gridEl.appendChild(bills);
+  }
+
+  function recalcKey(key){
+    let total = 0;
+    DENOMS.forEach((d, i) => {
+      const inp = document.querySelector(`.qty[data-key="${key}"][data-i="${i}"]`);
+      if (!inp) return;
+      let q = parseInt((inp.value || '').replace(/[^0-9]/g,''), 10);
+      if (isNaN(q)) q = 0;
+      const amt = q * d.v;
+      total += amt;
+      const cell = document.getElementById(key + '-amt-' + i);
+      if (cell) cell.innerHTML = q > 0 ? '= ' + money(amt) : '<span class="z">= 0,00 $</span>';
+    });
+    return total;
+  }
+
+  function recalc(){
+    liveCaisseTotal = recalcKey('main');
+    document.getElementById('grandTotal').textContent = money(liveCaisseTotal);
+  }
+
+  function recalcRecount(){
+    const t = recalcKey('recount');
+    document.getElementById('recountTotal').textContent = money(t);
+    const st = document.getElementById('recountStatus');
+    const diff = Math.round((t - CAISSE_FLOAT) * 100) / 100;
+    if (Math.abs(diff) < 0.005){
+      st.className = 'status ok';
+      st.textContent = '✓ La caisse est à 200,00 $.';
+      if (currentSheet){ currentSheet.recountOk = true; }
+    } else {
+      st.className = 'status warn';
+      st.textContent = (diff > 0 ? '✗ Surplus de ' : '✗ Manque de ') + money(Math.abs(diff)) + ' — la caisse n\'est pas à 200,00 $.';
+      if (currentSheet){ currentSheet.recountOk = false; }
+    }
+    if (currentSheet){ currentSheet.recountTotal = t; }
+  }
+
+  // ---- Détail des coupures (pour le rapport) ----
+  function captureDenoms(key){
+    return DENOMS.map((d, i) => {
+      const inp = document.querySelector(`.qty[data-key="${key}"][data-i="${i}"]`);
+      let q = parseInt(((inp && inp.value) || '').replace(/[^0-9]/g,''), 10);
+      if (isNaN(q)) q = 0;
+      return { v: d.v, label: d.label, qty: q, amt: q * d.v };
+    });
+  }
+
+  // ---- Confirmation d'enregistrement de la caisse ----
+  function askSaveCaisse(){
+    document.getElementById('confirmTotal').textContent = money(liveCaisseTotal);
+    document.getElementById('confirmModal').classList.add('show');
+  }
+  function closeConfirm(){
+    // Non : on reste sur la page de calcul
+    document.getElementById('confirmModal').classList.remove('show');
+  }
+  function confirmSaveCaisse(){
+    // Oui : on fige le total et on passe à l'étape 2
+    caisseTotal = liveCaisseTotal;
+    caisseDenoms = captureDenoms('main');
+    document.getElementById('confirmModal').classList.remove('show');
+    document.getElementById('ctxDate2').textContent = document.getElementById('ctxDate').textContent;
+    document.getElementById('ctxService2').textContent = document.getElementById('ctxService').textContent;
+    recalcCascade();
+    switchScreen('etape2');
+  }
+
+  // ---- Étape 2 : cascade ----
+  function recalcCascade(){
+    const retour = parseMoney(document.getElementById('retourInput').value);
+    const sousTotal = caisseTotal - CAISSE_FLOAT - retour;
+    document.getElementById('c2Total').textContent = money(caisseTotal);
+    document.getElementById('c2SousTotal').textContent = money(sousTotal);
+  }
+
+  async function continueEtape3(){
+    closeKeypad();
+    const date = document.getElementById('dateInput').value;
+    const retourEntered = parseMoney(document.getElementById('retourInput').value);
+
+    // Si une caisse du midi a été enregistrée pour la même date, on récupère sa feuille (serveur)
+    midiSheetForShift = null;
+    if (service === 'soir'){
+      try { midiSheetForShift = await api('/api/sheets/find?date=' + encodeURIComponent(date) + '&service=midi'); }
+      catch(e){ midiSheetForShift = findSavedSheet(date, 'midi'); }
+    }
+    const midiRetour = (midiSheetForShift && midiSheetForShift.retourEntered) ? midiSheetForShift.retourEntered : 0;
+    const retour = retourEntered - midiRetour;         // retour comptant effectif
+    const excedent = caisseTotal - CAISSE_FLOAT;
+    const totalPourboire = excedent - retour;
+    const depot = excedent - totalPourboire;
+
+    // Contexte
+    document.getElementById('ctxDate3').textContent = document.getElementById('ctxDate').textContent;
+    document.getElementById('ctxService3').textContent = document.getElementById('ctxService').textContent;
+
+    // Affichage du calcul (transparent)
+    document.getElementById('r3Solde').textContent = money(caisseTotal);
+    document.getElementById('r3Excedent').textContent = money(excedent);
+    document.getElementById('r3Retour').textContent = money(retourEntered);
+    const midiRow = document.getElementById('r3MidiRow');
+    if (midiRetour !== 0){
+      midiRow.style.display = 'flex';
+      document.getElementById('r3MidiRetour').textContent = money(midiRetour);
+    } else {
+      midiRow.style.display = 'none';
+    }
+    document.getElementById('r3Pourboire').textContent = money(totalPourboire);
+
+    // Dépôt : dès qu'il y a un dépôt à faire (retour comptant effectif positif)
+    const depotAmount = retour > 0 ? retour : 0;
+    const depotBox = document.getElementById('r3DepotBox');
+    if (depotAmount > 0){
+      depotBox.style.display = 'flex';
+      document.getElementById('r3Depot').textContent = money(depotAmount);
+    } else {
+      depotBox.style.display = 'none';
+    }
+
+    // Suffisance : argent disponible = excédent (solde − 200)
+    const available = excedent;
+    const sufficient = retour >= 0;
+    const shortfall = sufficient ? 0 : (totalPourboire - available);
+
+    // État courant (sera enregistré à l'étape suivante)
+    currentSheet = {
+      date: date,
+      service: service,
+      denoms: caisseDenoms,
+      caisseTotal: caisseTotal,
+      retourEntered: retourEntered,
+      midiRetour: midiRetour,
+      retour: retour,
+      excedent: excedent,
+      totalPourboire: totalPourboire,
+      depot: depotAmount,
+      available: available,
+      sufficient: sufficient,
+      shortfall: shortfall,
+      midiSheetId: null,
+      servers: shiftServers.map(s => ({ id: s.id, name: s.name, hours: 0, owed: 0, taken: 0, reste: 0, carryover: false }))
+    };
+
+    // Report des serveurs du midi non payés (reste > 0) qui ne travaillent pas le soir
+    if (service === 'soir' && midiSheetForShift){
+      const midi = midiSheetForShift;
+      if (Array.isArray(midi.servers)){
+        currentSheet.midiSheetId = midi.id;
+        midi.servers.forEach(ms => {
+          const reste = ms.reste || 0;
+          if (reste > 0.005 && !currentSheet.servers.some(s => s.id === ms.id || s.name === ms.name)){
+            currentSheet.servers.push({ id: ms.id, name: ms.name, hours: 0, owed: reste, taken: 0, reste: reste, carryover: true, midiReste: reste });
+          }
+        });
+      }
+    }
+
+    // Maximum à prendre en comptant = min(total des dûs, excédent physique)
+    const carryTotal = currentSheet.servers.filter(s => s.carryover).reduce((a, s) => a + s.owed, 0);
+    const cashTip = Math.max(0, Math.min(totalPourboire + carryTotal, excedent));
+    currentSheet.cashTip = cashTip;
+    document.getElementById('r3CashTip').textContent = money(cashTip);
+
+    updateStatusBanner();
+    switchScreen('etape3');
+  }
+
+  // ---- Statut suffisant / insuffisant (étape 3) ----
+  function updateStatusBanner(){
+    const banner = document.getElementById('r3Status');
+    if (currentSheet.sufficient){
+      banner.className = 'status ok';
+      banner.textContent = '✓ La caisse couvre les pourboires.';
+    } else {
+      banner.className = 'status warn';
+      banner.textContent = '⚠ Argent insuffisant — seul l\'excédent (' + money(currentSheet.available)
+        + ') peut être pris · reste dû : ' + money(currentSheet.shortfall) + '.';
+    }
+  }
+
+  // ---- Retrait : à plusieurs, on demande les heures d'abord (page dédiée) ----
+  function goRetrait(){
+    document.getElementById('ctxDateRt').textContent = document.getElementById('ctxDate').textContent;
+    document.getElementById('ctxServiceRt').textContent = document.getElementById('ctxService').textContent;
+    document.getElementById('rtCashTip').textContent = money(currentSheet.cashTip);
+    document.getElementById('rtTotalDu').textContent = money(currentSheet.totalPourboire);
+
+    const note = document.getElementById('rtNote');
+    if (!currentSheet.sufficient){
+      note.style.display = '';
+      note.className = 'status warn';
+      note.textContent = 'Seul l\'excédent de la caisse peut être pris en comptant. Reste dû (non pris) : ' + money(currentSheet.shortfall) + '.';
+    } else {
+      note.style.display = 'none';
+    }
+
+    const soirCount = currentSheet.servers.filter(s => !s.carryover).length;
+    if (soirCount > 1){
+      renderHoursPage();
+      switchScreen('heures');
+    } else {
+      computeOwed();
+      renderRetraitServers();
+      switchScreen('retrait');
+    }
+  }
+
+  function backFromRetrait(){
+    closeKeypad();
+    const soirCount = currentSheet ? currentSheet.servers.filter(s => !s.carryover).length : 0;
+    switchScreen(soirCount > 1 ? 'heures' : 'etape3');
+  }
+
+  // Page 1 (à plusieurs) : saisie des heures
+  function renderHoursPage(){
+    document.getElementById('hPourboire').textContent = money(currentSheet.totalPourboire);
+    const wrap = document.getElementById('hoursServers');
+    wrap.innerHTML = '';
+    currentSheet.servers.forEach((s, i) => {
+      if (s.carryover) return;
+      const card = document.createElement('div');
+      card.className = 'card scard';
+      card.innerHTML = `
+        <div class="scard-row" style="border:none;padding:2px 0">
+          <span class="scard-name" style="margin:0">${escapeHtml(s.name)}</span>
+          <input class="miniqty" type="text" inputmode="none" readonly placeholder="0 h"
+                 data-mode="hours" data-role="hours" data-si="${i}" data-label="${escapeHtml(s.name)} — heures" onclick="openKeypad(this)">
+        </div>`;
+      wrap.appendChild(card);
+    });
+  }
+
+  function confirmHours(){
+    closeKeypad();
+    currentSheet.servers.forEach((s, i) => {
+      if (s.carryover){ s.hours = 0; return; }
+      const h = document.querySelector('#hoursServers [data-role="hours"][data-si="' + i + '"]');
+      s.hours = h ? parseMoney(h.value) : 0;
+    });
+    computeOwed();
+    renderRetraitServers();
+    switchScreen('retrait');
+  }
+
+  function formatH(n){ return (Math.round(n * 100) / 100).toLocaleString('fr-CA'); }
+
+  // Calcule le pourboire dû de chacun (soir = selon heures ; report du midi = reste fixe)
+  function computeOwed(){
+    const soirServers = currentSheet.servers.filter(s => !s.carryover);
+    if (soirServers.length > 1){
+      const w = soirServers.map(s => s.hours || 0);
+      const wsum = w.reduce((a, b) => a + b, 0);
+      const arr = splitAmount(currentSheet.totalPourboire, wsum > 0 ? w : soirServers.map(() => 1));
+      let j = 0;
+      currentSheet.servers.forEach(s => { if (!s.carryover) s.owed = arr[j++]; });
+    } else if (soirServers.length === 1){
+      soirServers[0].owed = currentSheet.totalPourboire;
+    }
+    currentSheet.servers.forEach(s => { if (s.carryover) s.owed = s.midiReste; });
+  }
+
+  // Page 2 : répartition — pourboire dû (calculé) + montant pris en comptant
+  function renderRetraitServers(){
+    const wrap = document.getElementById('rtServers');
+    wrap.innerHTML = '';
+    currentSheet.servers.forEach((s, i) => {
+      const card = document.createElement('div');
+      card.className = 'card scard' + (s.carryover ? ' scard-midi' : '');
+      const hoursTag = (!s.carryover && s.hours) ? ` <span class="scard-tag" style="background:var(--muted)">${formatH(s.hours)} h</span>` : '';
+      const owedLabel = s.carryover ? 'Pourboire du midi (reporté)' : 'Pourboire';
+      card.innerHTML = `
+        <div class="scard-name">${escapeHtml(s.name)}${s.carryover ? ' <span class="scard-tag">midi</span>' : ''}${hoursTag}</div>
+        <div class="scard-row"><span class="scard-l">${owedLabel}</span><b class="scard-owed" id="owed-${i}">0,00 $</b></div>
+        <div class="scard-row">
+          <span class="scard-l">Pris en comptant</span>
+          <input class="miniqty" type="text" inputmode="none" readonly placeholder="0,00 $"
+                 data-mode="money" data-nosign="1" data-role="taken" data-si="${i}" data-label="${escapeHtml(s.name)} — pris comptant" onclick="openKeypad(this)">
+        </div>
+        <div class="scard-row scard-reste"><span class="scard-l">Reste à payer</span><b id="reste-${i}">0,00 $</b></div>
+      `;
+      wrap.appendChild(card);
+    });
+    recomputeRetrait();
+  }
+
+  // Répartit un montant selon des poids, arrondi au cent, reste aux plus grands poids
+  function splitAmount(total, weights){
+    const cents = Math.round(total * 100);
+    const wsum = weights.reduce((a, b) => a + b, 0);
+    let allocated = 0;
+    const arr = weights.map(w => {
+      const c = wsum > 0 ? Math.floor(cents * w / wsum) : 0;
+      allocated += c;
+      return c;
+    });
+    let rem = cents - allocated;
+    const order = weights.map((w, i) => ({ w, i })).sort((a, b) => b.w - a.w);
+    let k = 0;
+    while (rem > 0 && order.length){ arr[order[k % order.length].i] += 1; rem--; k++; }
+    return arr.map(c => c / 100);
+  }
+
+  function recomputeRetrait(){
+    if (!currentSheet) return;
+    // Le pourboire dû (owed) est déjà calculé par computeOwed(). Ici : montant pris → reste.
+    let takenSum = 0;
+    currentSheet.servers.forEach((s, i) => {
+      const t = document.querySelector(`[data-role="taken"][data-si="${i}"]`);
+      s.taken = t ? parseMoney(t.value) : 0;
+      s.reste = Math.round((s.owed - s.taken) * 100) / 100;
+      takenSum += s.taken;
+      const owedEl = document.getElementById('owed-' + i);
+      const resteEl = document.getElementById('reste-' + i);
+      if (owedEl) owedEl.textContent = money(s.owed);
+      if (resteEl) resteEl.textContent = money(s.reste);
+    });
+    takenSum = Math.round(takenSum * 100) / 100;
+    currentSheet.takenSum = takenSum;
+    currentSheet.actualDepot = Math.max(0, Math.round((currentSheet.excedent - takenSum) * 100) / 100);
+    const sumEl = document.getElementById('rtTakenSum');
+    if (sumEl) sumEl.textContent = money(takenSum);
+
+    // Alerte si on prend plus que le maximum disponible
+    const overNote = document.getElementById('rtTakenNote');
+    if (overNote){
+      if (takenSum - currentSheet.cashTip > 0.005){
+        overNote.style.display = '';
+        overNote.textContent = '⚠ Le total pris (' + money(takenSum) + ') dépasse le maximum disponible (' + money(currentSheet.cashTip) + ').';
+      } else {
+        overNote.style.display = 'none';
+      }
+    }
+  }
+
+  // ---- Rapport final ----
+  function goRapport(){
+    renderRapport();
+    document.getElementById('rapportActions').innerHTML =
+      '<button class="btn-primary" style="margin-top:20px" onclick="confirmRapport()">Confirmer et enregistrer ✓</button>';
+    switchScreen('rapport');
+  }
+
+  function denomLines(arr){
+    const rows = (arr || []).filter(d => d.qty > 0)
+      .map(d => `<tr><td class="ra-q">${d.qty}</td><td class="ra-x">×</td><td class="ra-d">${d.label}</td><td class="ra-a">${money(d.amt)}</td></tr>`)
+      .join('');
+    return rows || '<tr><td colspan="4" class="ra-empty">Aucune coupure</td></tr>';
+  }
+
+  function buildReportHTML(s){
+    const recountOk = Math.abs((s.recountTotal || 0) - CAISSE_FLOAT) < 0.005;
+    const svc = s.service === 'midi' ? 'Midi' : 'Soir';
+
+    const midiLine = (s.midiRetour && s.midiRetour !== 0)
+      ? `<div class="ra-line"><span>Retour comptant du midi (retiré)</span><b>${money(s.midiRetour)}</b></div>` : '';
+    const depotVal = (s.actualDepot != null) ? s.actualDepot : s.depot;
+    const depotLine = (depotVal > 0)
+      ? `<div class="ra-line"><span>Dépôt à effectuer</span><b>${money(depotVal)}</b></div>` : '';
+
+    const serverRows = s.servers.map(sv => `
+      <tr>
+        <td class="ra-sv-n">${escapeHtml(sv.name)}${sv.carryover ? ' <span class="scard-tag">midi</span>' : ''}</td>
+        <td>${sv.carryover ? '—' : (sv.hours ? formatH(sv.hours) + ' h' : '—')}</td>
+        <td class="ra-a">${money(sv.owed || 0)}</td>
+        <td class="ra-a">${money(sv.taken || 0)}</td>
+        <td class="ra-a">${money(sv.reste || 0)}</td>
+      </tr>`).join('');
+
+    let notesHtml = '';
+    if (s.carryDecline){
+      const t = new Date(s.carryDecline.at);
+      const hh = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
+      notesHtml += `<div class="ra-note">Pourboire du midi de ${escapeHtml((s.carryDecline.servers || []).join(', '))} non payé en entier — confirmé par le serveur présent à ${hh}.</div>`;
+    }
+    if (Array.isArray(s.notes) && s.notes.length){
+      notesHtml += s.notes.map(n => `<div class="ra-note">${escapeHtml(n)}</div>`).join('');
+    }
+
+    return `
+      <div class="ra-doc">
+        <div class="ra-head">
+          <div class="ra-brand">KÜTO</div>
+          <div class="ra-ttl">Feuille de caisse — ${svc}<br><span>${formatDate(s.date)}</span></div>
+        </div>
+
+        <div class="ra-sec">
+          <div class="ra-h">Montant de la caisse complète</div>
+          <table class="ra-tbl">${denomLines(s.denoms)}</table>
+          <div class="ra-line ra-tot"><span>Total de la caisse</span><b>${money(s.caisseTotal)}</b></div>
+        </div>
+
+        <div class="ra-sec">
+          <div class="ra-h">Calcul du pourboire</div>
+          <div class="ra-line"><span>Caisse conservée</span><b>− ${money(CAISSE_FLOAT)}</b></div>
+          <div class="ra-line"><span>Retour comptant</span><b>${money(s.retourEntered)}</b></div>
+          ${midiLine}
+          <div class="ra-line ra-tot"><span>Total pourboire</span><b>${money(s.totalPourboire)}</b></div>
+          ${depotLine}
+        </div>
+
+        <div class="ra-sec">
+          <div class="ra-h">Recompte de la caisse (200 $)</div>
+          <table class="ra-tbl">${denomLines(s.recountDenoms)}</table>
+          <div class="ra-line ra-tot"><span>Total recompté</span><b class="${recountOk ? 'ra-ok' : 'ra-bad'}">${money(s.recountTotal || 0)} ${recountOk ? '✓' : '✗'}</b></div>
+        </div>
+
+        <div class="ra-sec">
+          <div class="ra-h">Répartition des pourboires</div>
+          <table class="ra-tbl ra-srv">
+            <tr class="ra-sv-head"><th>Serveur</th><th>Heures</th><th>Pourboire</th><th>Pris</th><th>Reste</th></tr>
+            ${serverRows}
+          </table>
+        </div>
+        ${notesHtml}
+      </div>
+    `;
+  }
+
+  function renderRapport(){
+    currentSheet.recountDenoms = captureDenoms('recount');
+    currentSheet.recountTotal = recalcKey('recount');
+    document.getElementById('rapportBody').innerHTML = buildReportHTML(currentSheet);
+  }
+
+  // ---- Administration : consultation des feuilles ----
+  function openHistory(){ renderHistory(); switchScreen('history'); }
+
+  function renderHistory(){
+    const sheets = getSheets().slice().sort((a, b) => (b.date + b.service).localeCompare(a.date + a.service));
+    const byDate = {};
+    sheets.forEach(s => { (byDate[s.date] = byDate[s.date] || []).push(s); });
+    const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
+    const wrap = document.getElementById('historyList');
+    if (!dates.length){ wrap.innerHTML = '<div class="empty-hint">Aucune feuille enregistrée pour l\'instant.</div>'; return; }
+    wrap.innerHTML = dates.map(d => {
+      const rows = byDate[d].map(s => {
+        const label = s.service === 'midi' ? 'Midi' : 'Soir';
+        return `<div class="hist-row">
+          <span class="hist-svc">${label} · ${money(s.totalPourboire)}</span>
+          <span class="hist-acts">
+            <button type="button" class="hist-view" onclick="viewSheet('${s.id}')">Consulter</button>
+            <button type="button" class="hist-del" onclick="askDeleteSheet('${s.id}')">Supprimer</button>
+          </span>
+        </div>`;
+      }).join('');
+      return `<div class="card hist-card"><div class="hist-date">${formatDate(d)}</div>${rows}</div>`;
+    }).join('');
+  }
+
+  let viewedSheetId = null;
+  function viewSheet(id){
+    const s = getSheets().find(x => x.id === id);
+    if (!s) return;
+    viewedSheetId = id;
+    document.getElementById('sheetViewBody').innerHTML = buildReportHTML(s);
+    switchScreen('sheetView');
+  }
+
+  // ---- Suppression d'une feuille (admin) ----
+  let pendingDeleteId = null;
+  function askDeleteSheet(id){
+    pendingDeleteId = id || viewedSheetId;
+    document.getElementById('deleteModal').classList.add('show');
+  }
+  function closeDelete(){
+    document.getElementById('deleteModal').classList.remove('show');
+    const m = document.getElementById('delErr'); if (m) m.textContent = '';
+  }
+  function delFail(txt){
+    let m = document.getElementById('delErr');
+    if (!m){
+      m = document.createElement('div'); m.id = 'delErr'; m.className = 'pw-err'; m.style.marginTop = '10px';
+      const mb = document.querySelector('#deleteModal .modal-btns');
+      mb.parentNode.insertBefore(m, mb);
+    }
+    m.textContent = txt;
+  }
+  async function doDeleteSheet(){
+    if (!pendingDeleteId){ closeDelete(); return; }
+    const id = pendingDeleteId;
+    const btn = document.getElementById('delConfirmBtn');
+    if (btn){ btn.disabled = true; btn.textContent = 'Suppression…'; }
+    try {
+      if (!adminTok){ delFail('Connexion admin absente — ferme, touche ⚙ et reconnecte-toi en admin.'); return; }
+      let res;
+      try {
+        res = await fetch('/api/sheets/' + encodeURIComponent(id), { method: 'DELETE', headers: { 'x-admin-token': adminTok } });
+      } catch(net){
+        delFail('Pas de connexion au serveur. Réessaie dans un instant.');
+        return;
+      }
+      if (res.status === 401){ delFail('Connexion admin expirée — ferme, touche ⚙, reconnecte-toi, puis réessaie.'); return; }
+      if (!res.ok){ delFail('Erreur du serveur (code ' + res.status + '). Réessaie.'); return; }
+      await syncPull();  // recharge la liste réelle depuis le serveur
+      if (getSheets().some(s => s.id === id)){
+        delFail('Le serveur a répondu OK mais la feuille est toujours là. Copie-moi ce message.');
+        return;
+      }
+      pendingDeleteId = null;
+      closeDelete();
+      renderHistory();
+    } finally {
+      if (btn){ btn.disabled = false; btn.textContent = 'Supprimer'; }
+    }
+  }
+
+  // ---- Envoi par courriel (ouvre l'app courriel de l'appareil) ----
+  function mailto(subject, body){
+    window.location.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+  }
+  function sheetToText(s){
+    const svc = s.service === 'midi' ? 'Midi' : 'Soir';
+    const L = [];
+    L.push('KÜTO — Feuille de caisse ' + svc + ' — ' + formatDate(s.date));
+    L.push('');
+    L.push('Total de la caisse : ' + money(s.caisseTotal));
+    L.push('Retour comptant : ' + money(s.retourEntered));
+    if (s.midiRetour) L.push('Retour comptant du midi (retiré) : ' + money(s.midiRetour));
+    L.push('Total pourboire : ' + money(s.totalPourboire));
+    const depotVal = (s.actualDepot != null) ? s.actualDepot : s.depot;
+    if (depotVal > 0) L.push('Dépôt à effectuer : ' + money(depotVal));
+    const rok = Math.abs((s.recountTotal || 0) - CAISSE_FLOAT) < 0.005;
+    L.push('Recompte : ' + money(s.recountTotal || 0) + (rok ? ' (OK)' : ' (écart)'));
+    L.push('');
+    L.push('Répartition des pourboires :');
+    s.servers.forEach(sv => {
+      L.push('- ' + sv.name + (sv.carryover ? ' (midi)' : '') + ' : dû ' + money(sv.owed || 0) + ', pris ' + money(sv.taken || 0) + ', reste ' + money(sv.reste || 0));
+    });
+    if (s.carryDecline) L.push('Note : pourboire du midi de ' + (s.carryDecline.servers || []).join(', ') + ' non payé en entier (confirmé).');
+    if (Array.isArray(s.notes)) s.notes.forEach(n => L.push('Note : ' + n));
+    return L.join('\n');
+  }
+  function emailSheet(){
+    const s = getSheets().find(x => x.id === viewedSheetId);
+    if (!s) return;
+    mailto('KÜTO — Caisse ' + (s.service === 'midi' ? 'midi' : 'soir') + ' ' + s.date, sheetToText(s));
+  }
+
+  function unpaidToText(byServer, title){
+    const names = Object.keys(byServer).sort();
+    const L = ['KÜTO — ' + title, ''];
+    let grand = 0;
+    if (!names.length){ L.push('Aucun pourboire non payé.'); return L.join('\n'); }
+    names.forEach(n => {
+      const g = byServer[n]; grand += g.total;
+      L.push(n + ' : ' + money(g.total));
+      g.entries.sort((a, b) => a.date.localeCompare(b.date)).forEach(e => {
+        L.push('   ' + formatDate(e.date) + ' — ' + (e.service === 'midi' ? 'Midi' : 'Soir') + ' : ' + money(e.amount));
+      });
+    });
+    L.push(''); L.push('Total : ' + money(grand));
+    return L.join('\n');
+  }
+  function emailWeekly(){
+    const { start, end } = weekRange(weekOffset);
+    const by = aggregateUnpaid(getSheets().filter(s => s.date >= start && s.date <= end), null);
+    mailto('KÜTO — Pourboires non payés (semaine)', unpaidToText(by, 'Pourboires non payés — du ' + formatDate(start) + ' au ' + formatDate(end)));
+  }
+  function emailCustom(){
+    const start = document.getElementById('custStart').value;
+    const end = document.getElementById('custEnd').value;
+    const checked = Array.from(document.querySelectorAll('#custServers input:checked')).map(i => i.value);
+    const allowed = checked.length ? new Set(checked) : null;
+    const by = aggregateUnpaid(getSheets().filter(s => (!start || s.date >= start) && (!end || s.date <= end)), allowed);
+    mailto('KÜTO — Pourboires non payés', unpaidToText(by, 'Pourboires non payés — du ' + formatDate(start) + ' au ' + formatDate(end)));
+  }
+
+  // ---- Administration : rapport hebdomadaire des pourboires non payés ----
+  let weekOffset = 0;
+
+  function openWeekly(){ weekOffset = 0; renderWeekly(); switchScreen('weekly'); }
+  function changeWeek(delta){ weekOffset += delta; renderWeekly(); }
+
+  function isoOf(d){
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  function weekRange(offset){
+    const now = new Date();
+    const dow = (now.getDay() + 6) % 7; // 0 = lundi
+    const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dow + offset * 7);
+    const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+    return { start: isoOf(monday), end: isoOf(sunday) };
+  }
+
+  function aggregateUnpaid(sheetsArr, allowedNames){
+    const byServer = {};
+    sheetsArr.forEach(s => {
+      (s.servers || []).forEach(sv => {
+        // On ne compte que l'origine (non-report) : le reste y est tenu à jour
+        if (!sv.carryover && (sv.reste || 0) > 0.005 && (!allowedNames || allowedNames.has(sv.name))){
+          const k = sv.name;
+          byServer[k] = byServer[k] || { entries: [], total: 0 };
+          byServer[k].entries.push({ date: s.date, service: s.service, amount: sv.reste });
+          byServer[k].total += sv.reste;
+        }
+      });
+    });
+    return byServer;
+  }
+
+  function renderUnpaidInto(byServer, wrap, totalLabel){
+    const names = Object.keys(byServer).sort();
+    if (!names.length){
+      wrap.innerHTML = '<div class="status ok" style="text-align:center">Aucun pourboire non payé pour cette sélection. ✓</div>';
+      return;
+    }
+    let grand = 0;
+    wrap.innerHTML = names.map(n => {
+      const g = byServer[n];
+      grand += g.total;
+      const rows = g.entries
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .map(e => `<div class="wk-line"><span>${formatDate(e.date)} — ${e.service === 'midi' ? 'Midi' : 'Soir'}</span><b>${money(e.amount)}</b></div>`)
+        .join('');
+      return `<div class="card wk-card"><div class="wk-name">${escapeHtml(n)}<span class="wk-total">${money(g.total)}</span></div>${rows}</div>`;
+    }).join('') +
+      `<div class="total-box" style="margin-top:16px"><span class="t">${totalLabel || 'Total non payé'}</span><span class="v">${money(grand)}</span></div>`;
+  }
+
+  function renderWeekly(){
+    const { start, end } = weekRange(weekOffset);
+    document.getElementById('weekLabel').textContent = 'Du ' + formatDate(start) + ' au ' + formatDate(end);
+    const inWeek = getSheets().filter(s => s.date >= start && s.date <= end);
+    renderUnpaidInto(aggregateUnpaid(inWeek, null), document.getElementById('weeklyBody'), 'Total non payé (semaine)');
+  }
+
+  // ---- Rapport personnalisé : serveurs + plage de dates ----
+  function openCustom(){
+    const today = isoOf(new Date());
+    const wk = weekRange(0);
+    document.getElementById('custStart').value = wk.start;
+    document.getElementById('custEnd').value = today;
+    const box = document.getElementById('custServers');
+    box.innerHTML = roster.length
+      ? roster.map(r => `<label class="cust-srv"><input type="checkbox" value="${escapeHtml(r.name)}" checked> <span>${escapeHtml(r.name)}</span></label>`).join('')
+      : '<div class="empty-hint">Aucun serveur enregistré.</div>';
+    document.getElementById('customBody').innerHTML = '';
+    switchScreen('custom');
+  }
+
+  function generateCustom(){
+    const start = document.getElementById('custStart').value;
+    const end = document.getElementById('custEnd').value;
+    const checked = Array.from(document.querySelectorAll('#custServers input:checked')).map(i => i.value);
+    const allowed = checked.length ? new Set(checked) : null;
+    const inRange = getSheets().filter(s => (!start || s.date >= start) && (!end || s.date <= end));
+    renderUnpaidInto(aggregateUnpaid(inRange, allowed), document.getElementById('customBody'), 'Total non payé (période)');
+  }
+
+  async function confirmRapport(){
+    renderRapport();  // fige les dernières valeurs (recompte)
+    if (!currentSheet.id) currentSheet.id = 'S' + new Date().getTime();
+    currentSheet.savedAt = new Date().toISOString();
+    const midiUpdated = applyCarryoverPayments();   // reporter les paiements sur la feuille du midi
+    try {
+      if (midiUpdated) await api('/api/sheets', { method: 'POST', body: midiUpdated });
+      await api('/api/sheets', { method: 'POST', body: currentSheet });
+      const sheets = getSheets();
+      const i = sheets.findIndex(s => s.id === currentSheet.id);
+      if (i >= 0) sheets[i] = currentSheet; else sheets.push(currentSheet);
+      saveSheets(sheets);
+      document.getElementById('rapportActions').innerHTML =
+        '<div class="status ok" style="text-align:center">✓ Feuille enregistrée dans le cloud.</div>' +
+        '<button class="btn-primary" style="margin-top:14px" onclick="newSheet()">Terminer</button>';
+    } catch(e){
+      document.getElementById('rapportActions').innerHTML =
+        '<div class="status warn" style="text-align:center">⚠ Enregistrement impossible (connexion ?).</div>' +
+        '<button class="btn-primary" style="margin-top:14px" onclick="confirmRapport()">Réessayer</button>';
+    }
+  }
+
+  // Reporte les montants payés le soir sur la feuille du midi (réduit le reste + ajoute une note)
+  function applyCarryoverPayments(){
+    const paid = currentSheet.servers.filter(s => s.carryover && s.taken > 0.005);
+    if (!paid.length || !midiSheetForShift) return null;
+    const midi = midiSheetForShift;
+    midi.notes = midi.notes || [];
+    paid.forEach(cs => {
+      const ms = (midi.servers || []).find(m => m.id === cs.id || m.name === cs.name);
+      if (ms) ms.reste = Math.max(0, Math.round((ms.reste - cs.taken) * 100) / 100);
+      midi.notes.push(money(cs.taken) + ' du pourboire du midi de ' + cs.name + ' payé le soir du ' + formatDate(currentSheet.date) + '.');
+    });
+    try {
+      const sheets = getSheets();
+      const i = sheets.findIndex(s => s.id === midi.id);
+      if (i >= 0){ sheets[i] = midi; saveSheets(sheets); }
+    } catch(e){}
+    return midi;
+  }
+
+  function newSheet(){ location.reload(); }
+
+  // ---- Confirmation du retrait, puis recompte ----
+  function askWithdraw(){
+    // Règle : payer d'abord le serveur du midi reporté.
+    // S'il reste dû alors qu'il y avait assez d'argent → confirmation horodatée.
+    const unpaid = currentSheet.servers.filter(s => s.carryover
+      && (s.owed - s.taken) > 0.005
+      && currentSheet.excedent + 0.005 >= s.owed);
+    if (unpaid.length){
+      const list = unpaid.map(s => `${escapeHtml(s.name)} (reste ${money(s.owed - s.taken)})`).join(', ');
+      document.getElementById('carryConfirmText').innerHTML =
+        'Le pourboire du midi de <b>' + list + '</b> n\'est pas payé en entier, alors qu\'il y a assez d\'argent dans la caisse. Confirmes-tu de ne pas le payer davantage ?';
+      currentSheet._pendingUnpaid = unpaid.map(s => s.name);
+      document.getElementById('carryModal').classList.add('show');
+      return;
+    }
+    showWithdrawModal();
+  }
+  function closeCarry(){ document.getElementById('carryModal').classList.remove('show'); }
+  function confirmCarryDecline(){
+    currentSheet.carryDecline = { at: new Date().toISOString(), servers: currentSheet._pendingUnpaid || [] };
+    document.getElementById('carryModal').classList.remove('show');
+    showWithdrawModal();
+  }
+  function showWithdrawModal(){
+    document.getElementById('withdrawAmt').textContent = money(currentSheet.takenSum || 0);
+    document.getElementById('withdrawModal').classList.add('show');
+  }
+  function closeWithdraw(){ document.getElementById('withdrawModal').classList.remove('show'); }
+  function confirmWithdraw(){
+    closeWithdraw();
+    currentSheet.withdrawn = true;
+    document.getElementById('ctxDateR').textContent = document.getElementById('ctxDate').textContent;
+    document.getElementById('ctxServiceR').textContent = document.getElementById('ctxService').textContent;
+    recalcRecount();
+    switchScreen('recompte');
+  }
+
+  // ---- Démarrage ----
+  boot();
+</script>
+</body>
+</html>
